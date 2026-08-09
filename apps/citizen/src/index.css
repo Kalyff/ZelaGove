@@ -1,0 +1,27 @@
+/* Variáveis semânticas do design system. Precisa vir antes das diretivas. */
+@import '../../../packages/ui/src/styles/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* `:focus-visible` e o guard de prefers-reduced-motion vivem no preset
+   (packages/ui/tailwind.preset.js), compartilhados com o painel. */
+
+@layer base {
+  body {
+    /* Fundo azul institucional: é o que aparece ao redor da moldura no
+       desktop. No escuro precisa ficar MAIS escuro que a moldura, senão a
+       silhueta do aparelho desaparece. */
+    @apply bg-gov-blue-900 font-sans text-content antialiased dark:bg-gov-blue-950;
+  }
+}
+
+@layer components {
+  .field-label {
+    @apply mb-1.5 block font-display text-xs font-bold uppercase tracking-[0.12em] text-content-secondary;
+  }
+  .field-input {
+    @apply w-full rounded-field border border-line-strong bg-surface px-4 py-3 text-[15px] text-content placeholder:text-content-tertiary focus:border-accent;
+  }
+}

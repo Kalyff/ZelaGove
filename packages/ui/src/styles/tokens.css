@@ -1,0 +1,147 @@
+/**
+ * Camada 2 do sistema de cor: as variáveis semânticas.
+ *
+ * Este é o ÚNICO arquivo do design system com hex cru. Componente nenhum
+ * escreve `#1351B4` — escreve `bg-accent`, e o valor vem daqui.
+ *
+ * Cada par foreground/background abaixo tem o contraste anotado. Os números
+ * são WCAG 2.1 sobre a superfície-base do tema (`--surface`). O piso para
+ * qualquer texto é 4,5:1; `--decor` está abaixo disso de propósito e é a única
+ * variável proibida em texto.
+ */
+
+:root {
+  color-scheme: light;
+
+  --surface: #ffffff;
+  --surface-raised: #ffffff; /* card; separado do fundo por borda, não por tom */
+  --surface-sunken: #f7f9fc;
+  --surface-inverse: #071d41; /* moldura desktop do cidadão, sidebar do admin */
+  --surface-overlay: rgb(7 29 65 / 0.45);
+
+  --border-subtle: #dde4ed;
+  --border-strong: #8494ac; /* controle de formulário — 3,08:1, cumpre WCAG 1.4.11 */
+  --border-focus: #1351b4;
+
+  --text-primary: #0f1a2e; /* 17,4:1  AAA */
+  --text-secondary: #48566b; /*  7,5:1  AAA */
+  --text-tertiary: #64748b; /*  4,8:1  AA  <- piso de qualquer texto */
+  --text-inverse: #f7f9fc;
+  --text-on-accent: #ffffff;
+  --decor: #93a2b8; /*  2,6:1  NÃO-TEXTO: ícone grande, régua, divisória */
+
+  --accent: #1351b4;
+  --accent-hover: #0f4292;
+  --accent-soft: #e8eefa;
+  --accent-on-soft: #0f4292;
+
+  --success: #168821;
+  --success-soft: #d2eed6;
+  --success-on-soft: #0f6b19;
+  --text-on-success: #ffffff; /* 4,59:1 sobre #168821 */
+
+  --warn: #b54708;
+  --warn-soft: #fdf3d8;
+  --warn-on-soft: #b54708;
+  --text-on-warn: #ffffff; /* 6,7:1 sobre #B54708 */
+
+  /* Erro de SISTEMA. Status de chamado nunca usa vermelho. */
+  --danger: #e52207;
+  --danger-soft: #fef0ee;
+  --danger-on-soft: #9e1705; /* 7,33:1 — o par anterior era 4,21:1 e reprovava */
+  /* Texto SOBRE o preenchimento `--danger`. Precisa de token próprio porque no
+     escuro o `--danger` é um salmão CLARO: branco em cima dele dá 2,9:1. */
+  --text-on-danger: #ffffff; /* 4,65:1 sobre #E52207 */
+
+  --stripe-a: #168821;
+  --stripe-b: #ffcd07;
+
+  /**
+   * Texto sobre "chrome" escuro: sidebar do painel, capa do Gateway, painel
+   * esquerdo do login do servidor.
+   *
+   * Existe separado porque essas superfícies são escuras nos DOIS temas — não
+   * podem usar `--text-*`, que assume fundo claro, nem `--text-inverse`, que
+   * inverte. Por isso não são redefinidos em `.dark`.
+   * Contraste medido sobre #071D41.
+   */
+  --text-chrome: #f7f9fc; /* 15,8:1 */
+  --text-chrome-secondary: #aebacd; /*  8,5:1 */
+  --text-chrome-tertiary: #8494ac; /*  5,4:1  <- piso; substitui text-white/40 */
+
+  --ring: #1351b4;
+  --ring-offset: #ffffff;
+
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+
+/**
+ * Dark é TONAL DESSATURADO, não invertido.
+ *
+ * As superfícies são quase-preto azulado, e os acentos SOBEM para as rungs
+ * 300/400 da rampa. Um acento na rung 600 sobre quase-preto dá 2,5:1 e é
+ * ilegível — inverter a paleta claro não funciona, tem que ser recalculada.
+ */
+.dark {
+  color-scheme: dark;
+
+  --surface: #0b1220;
+  --surface-raised: #131c2e;
+  --surface-sunken: #070c16;
+  --surface-inverse: #eef2f7;
+  --surface-overlay: rgb(4 10 22 / 0.66); /* no escuro precisa de mais opacidade */
+
+  --border-subtle: #1f2b42;
+  --border-strong: #3a4a63;
+  --border-focus: #9bbaec;
+
+  --text-primary: #e8edf5; /* 15,9:1  AAA */
+  --text-secondary: #aebacd; /*  9,6:1  AAA */
+  --text-tertiary: #8494ac; /*  6,1:1  AA+ */
+  --text-inverse: #0f1a2e;
+  --text-on-accent: #04122a;
+  --decor: #4a5a75;
+
+  --accent: #5b8fdd; /* 5,7:1 */
+  --accent-hover: #9bbaec; /* 9,5:1 */
+  --accent-soft: #142440;
+  --accent-on-soft: #9bbaec;
+
+  /* Os quatro tokens de PREENCHIMENTO (accent/success/warn/danger) sobem para
+     as rungs claras no escuro. Por isso cada um tem o seu `--text-on-*`: usar
+     branco em cima deles aqui derruba o contraste para ~3:1. */
+  --success: #3fa84f; /* 6,2:1 */
+  --success-soft: #0e2617;
+  --success-on-soft: #6fc57b;
+  --text-on-success: #052a0c; /* 5,6:1 sobre #3FA84F */
+
+  --warn: #f5c863; /* 11,9:1 */
+  --warn-soft: #2a1e08;
+  --warn-on-soft: #f5c863;
+  --text-on-warn: #2a1e08; /* 10,3:1 sobre #F5C863 */
+
+  --danger: #f27f6e; /* 7,2:1 */
+  --danger-soft: #2a0f0b;
+  --danger-on-soft: #f27f6e;
+  --text-on-danger: #3f0a02; /* 5,6:1 sobre #F27F6E — escuro, não branco */
+
+  --stripe-a: #22962f; /* levemente elevado para a faixa ler no escuro */
+  --stripe-b: #ffcd07;
+
+  --ring: #9bbaec;
+  --ring-offset: #0b1220;
+}
+
+/**
+ * Quem pede mais contraste no SO recebe mais contraste: o terciário sobe para
+ * o secundário e a borda sutil sobe para a forte.
+ */
+@media (prefers-contrast: more) {
+  :root {
+    --text-tertiary: var(--text-secondary);
+    --border-subtle: var(--border-strong);
+  }
+}

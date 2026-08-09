@@ -1,0 +1,14 @@
+node_modules/
+dist/
+
+# Segredos. `.env` sozinho não cobria o `.env.test` que o README manda criar
+# para os testes de integração — e um arquivo de ambiente no histórico só sai
+# reescrevendo o histórico. Os `.example` são versionados de propósito: são a
+# documentação de quais variáveis existem.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+.DS_Store
+*.log

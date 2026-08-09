@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -i -X OPTIONS http://localhost:3333/api/v1/tickets -H 'Origin: http://localhost:5173' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: authorization,content-type')",
+      "Bash(curl -s -i -X OPTIONS http://localhost:3333/api/v1/admin/tickets/035ebc59-481f-4c08-8c7e-fdf2faf620d7/status -H 'Origin: http://localhost:5174' -H 'Access-Control-Request-Method: PATCH' -H 'Access-Control-Request-Headers: authorization,content-type')",
+      "Bash(powershell -Command \"Stop-Process -Id 720 -Force\")",
+      "Bash(npm run *)",
+      "Bash(netstat -ano)",
+      "Bash(where ngrok *)",
+      "Bash(where cloudflared *)",
+      "Bash(where mkcert *)",
+      "PowerShell(winget install ngrok.ngrok --accept-source-agreements --accept-package-agreements 2>&1)",
+      "Bash(find \"/c/Users/kalyf/AppData/Local/Microsoft/WinGet/Packages\" -iname \"ngrok.exe\" 2>/dev/null)",
+      "Bash(\"/c/Users/kalyf/AppData/Local/Microsoft/WinGet/Packages/Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe/ngrok.exe\" config *)",
+      "Bash(powershell -Command \"Stop-Process -Id 3240 -Force -ErrorAction SilentlyContinue\")",
+      "Bash(\"/c/Users/kalyf/AppData/Local/Microsoft/WinGet/Packages/Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe/ngrok.exe\" http *)",
+      "Bash(\"/c/Users/kalyf/AppData/Local/Microsoft/WinGet/Packages/Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe/ngrok.exe\" update *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://grievance-reopen-freebase.ngrok-free.dev)",
+      "Bash(curl -s -X POST https://grievance-reopen-freebase.ngrok-free.dev/api/v1/auth/login -H 'Content-Type: application/json' -H 'ngrok-skip-browser-warning: true' -d '{\"email\":\"joao@email.com\",\"password\":\"senha123\"}')"
+    ]
+  }
+}

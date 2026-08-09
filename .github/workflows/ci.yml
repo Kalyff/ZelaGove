@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verificacao:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: zeladoria
+          POSTGRES_PASSWORD: zeladoria
+          POSTGRES_DB: zeladoria_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U zeladoria"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://zeladoria:zeladoria@localhost:5432/zeladoria_test?schema=public
+      JWT_ACCESS_SECRET: ci-secret-com-mais-de-32-caracteres-aqui-ok
+      JWT_REFRESH_SECRET: ci-refresh-com-mais-de-32-caracteres-aqui-ok
+      S3_ENDPOINT: http://localhost:9000
+      S3_BUCKET: zeladoria-test
+      S3_ACCESS_KEY: zeladoria
+      S3_SECRET_KEY: zeladoria123
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Preparar banco
+        working-directory: apps/api
+        run: |
+          npx prisma migrate deploy
+          npx tsx prisma/hardening.ts
+
+      - name: Verificação de tipos
+        run: npm run typecheck --workspaces --if-present
+
+      - name: Testes unitários
+        run: npm run test --workspaces --if-present
+
+      - name: Testes de integração
+        run: npm run test:integration

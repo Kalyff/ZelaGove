@@ -1,0 +1,161 @@
+// Zeladoria.gov — modelo de dados
+//
+// Nota sobre PostGIS: a extensão é habilitada em hardening.ts desde o dia 1,
+// mas latitude/longitude ficam como Decimal enquanto não existir consulta
+// espacial de verdade. Prisma não modela geography nativamente, e forçar isso
+// agora traria SQL cru em todo CRUD sem nenhum ganho — nenhuma tela das fases
+// 0–5 precisa de consulta por raio. Quando entrar deduplicação por proximidade
+// ou agregação por zona, adiciona-se uma coluna geography gerada por migration.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  citizen
+  admin
+}
+
+enum TicketStatus {
+  pending
+  in_progress
+  done
+  /// Fora da competência municipal, repassado a outro órgão.
+  /// Terminal para a prefeitura, mas reversível: classificação errada acontece,
+  /// e a linha do tempo registra a ida e a volta.
+  forwarded
+}
+
+/// Tipo de órgão externo. `secretaria` e `consorcio` existem porque o caso mais
+/// comum não é federal: é outra secretaria da própria prefeitura, ou um
+/// consórcio intermunicipal de resíduos.
+enum AgencyKind {
+  federal
+  estadual
+  concessionaria
+  secretaria
+  consorcio
+  outro
+}
+
+enum TicketCategory {
+  lighting
+  paving
+  sanitation
+  traffic
+  cleaning
+  other
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tickets     Ticket[]
+  actedEvents TicketEvent[] @relation("EventActor")
+
+  @@map("users")
+}
+
+model Ticket {
+  id            String         @id @default(uuid()) @db.Uuid
+  protocol      String         @unique
+  userId        String         @map("user_id") @db.Uuid
+  category      TicketCategory
+  title         String
+  description   String
+  // Cache do status do último evento. Mantido consistente por transação
+  // única no ticket.service (nunca escreva um sem o outro).
+  status        TicketStatus   @default(pending)
+  latitude      Decimal        @db.Decimal(9, 6)
+  longitude     Decimal        @db.Decimal(9, 6)
+  photoKey      String?        @map("photo_key")
+  // Cache do ÚLTIMO encaminhamento, pelo mesmo motivo e com a mesma regra do
+  // `status` acima: consulta e listagem não deveriam varrer eventos. A verdade
+  // auditável de para onde o chamado foi, e quando, está em ticket_events —
+  // aqui fica só o valor corrente. Nunca escreva um sem o outro.
+  forwardedToId String?        @map("forwarded_to_id") @db.Uuid
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  forwardedTo Agency?       @relation("TicketForwardedTo", fields: [forwardedToId], references: [id], onDelete: Restrict)
+  events      TicketEvent[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("tickets")
+}
+
+/// Trilha de auditoria (requisito 4.2). Append-only.
+/// UPDATE e DELETE são bloqueados por trigger no banco — ver hardening.ts.
+model TicketEvent {
+  id               String       @id @default(uuid()) @db.Uuid
+  ticketId         String       @map("ticket_id") @db.Uuid
+  actorId          String?      @map("actor_id") @db.Uuid
+  status           TicketStatus
+  note             String?
+  photoKey         String?      @map("photo_key")
+  /// Para ONDE foi este encaminhamento. Mora no evento, e não só no ticket,
+  /// porque é o próprio encaminhamento que precisa ser auditável: encaminhou à
+  /// concessionária, reverteu, encaminhou ao SAAE — com o dado só no ticket, a
+  /// linha do tempo teria dois "encaminhado" sem órgão em nenhum, e a pergunta
+  /// que o repasse existe para responder (para onde foi em tal data, sob qual
+  /// protocolo) ficaria sem resposta.
+  agencyId         String?      @map("agency_id") @db.Uuid
+  /// Protocolo do OUTRO órgão. Opcional no encaminhamento: na prática ele chega
+  /// dias depois, e anotá-lo é um evento próprio.
+  externalProtocol String?      @map("external_protocol")
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  ticket Ticket  @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  actor  User?   @relation("EventActor", fields: [actorId], references: [id], onDelete: Restrict)
+  agency Agency? @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId, createdAt(sort: Desc)])
+  @@map("ticket_events")
+}
+
+/// Órgão externo para onde um chamado pode ser encaminhado.
+///
+/// Os campos `public*` são VOLTADOS AO CIDADÃO, não anotação interna: quem teve
+/// o chamado repassado precisa saber onde cobrar. Por isso são colunas
+/// estruturadas e não um campo de texto livre de uso administrativo.
+model Agency {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String
+  kind        AgencyKind
+  publicPhone String?    @map("public_phone")
+  publicUrl   String?    @map("public_url")
+  publicNote  String?    @map("public_note")
+  /// Desativar preserva o histórico; excluir apagaria de onde o chamado foi.
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  events           TicketEvent[]
+  forwardedTickets Ticket[]      @relation("TicketForwardedTo")
+
+  @@index([active, name])
+  @@map("agencies")
+}
+
+/// Contador do protocolo sequencial anual (formato 2026-0000123).
+/// Incrementado na mesma transação que cria o chamado: rollback devolve o
+/// número, então não há lacunas na numeração.
+model TicketCounter {
+  year    Int    @id
+  lastSeq BigInt @default(0) @map("last_seq")
+
+  @@map("ticket_counters")
+}

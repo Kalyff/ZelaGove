@@ -1,0 +1,16 @@
+{
+  "name": "zeladoria-gov",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace @zeladoria/api",
+    "db:setup": "npm run db:setup --workspace @zeladoria/api",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:integration": "npm run test:integration --workspace @zeladoria/api"
+  }
+}

@@ -1,0 +1,66 @@
+/* Variáveis semânticas do design system. Precisa vir antes das diretivas. */
+@import '../../../packages/ui/src/styles/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* `:focus-visible` e o guard de prefers-reduced-motion vivem no preset
+   (packages/ui/tailwind.preset.js), compartilhados com o app do cidadão. */
+
+@layer base {
+  body {
+    @apply bg-surface-sunken font-sans text-content antialiased;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-card border border-line bg-surface-raised shadow-card;
+  }
+  .field-label {
+    @apply mb-1.5 block font-display text-xs font-bold uppercase tracking-[0.12em] text-content-secondary;
+  }
+  .field-input {
+    @apply w-full rounded-field border border-line-strong bg-surface px-4 py-2.5 text-sm text-content placeholder:text-content-tertiary focus:border-accent;
+  }
+}
+
+/* O Leaflet precisa de altura explícita no container ou o mapa não renderiza.
+   O fundo usa token: o `#e2e8f0` fixo de antes piscava cinza-claro no escuro
+   enquanto os tiles carregavam. */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: var(--surface-sunken);
+}
+
+/* O Leaflet pinta o popup, a seta e a atribuição com branco fixo no próprio
+   CSS. Sem sobrescrever, ficam três retângulos brancos sobre o mapa escuro. */
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  box-shadow: 0 10px 30px -12px rgb(7 29 65 / 0.35);
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  color: var(--text-tertiary);
+}
+
+.leaflet-control-attribution {
+  background: var(--surface-raised) !important;
+  color: var(--text-tertiary);
+}
+
+.leaflet-control-attribution a {
+  color: var(--accent);
+}
+
+/* Os botões de zoom têm borda e fundo próprios do Leaflet. */
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border-bottom-color: var(--border-subtle);
+}
