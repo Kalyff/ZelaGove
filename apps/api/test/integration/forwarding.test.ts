@@ -2,7 +2,7 @@ import type { Agency } from '@prisma/client';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { prisma } from '../../src/infra/prisma';
-import { app, createAgency, createUser, loginAs, openTicket, resetDatabase } from './helpers';
+import { app, createAgency, createUser, loginAs, openTicket, resetDatabase, truncateTickets } from './helpers';
 
 /**
  * Encaminhamento a órgão externo.
@@ -45,7 +45,7 @@ describe('encaminhamento a órgão externo', () => {
   /* Os órgãos sobrevivem: `agencies` não está neste TRUNCATE, e nada em
      `agencies` referencia `tickets`, então o CASCADE não a alcança. */
   beforeEach(async () => {
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE ticket_events, tickets RESTART IDENTITY CASCADE');
+    await truncateTickets();
   });
 
   afterAll(() => prisma.$disconnect());

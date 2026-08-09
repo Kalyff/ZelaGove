@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '../../src/infra/prisma';
-import { createUser, loginAs, openTicket, resetDatabase } from './helpers';
+import { createUser, loginAs, openTicket, resetDatabase, truncateTickets } from './helpers';
 
 /**
  * Requisito 4.2. A garantia de imutabilidade vive no BANCO, não no service —
@@ -18,7 +18,7 @@ describe('trilha de auditoria', () => {
   });
 
   beforeEach(async () => {
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE ticket_events, tickets RESTART IDENTITY CASCADE');
+    await truncateTickets();
   });
 
   afterAll(() => prisma.$disconnect());

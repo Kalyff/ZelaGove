@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { prisma } from '../../src/infra/prisma';
-import { app, createUser, loginAs, openTicket, PASSWORD, resetDatabase } from './helpers';
+import { app, createUser, loginAs, openTicket, PASSWORD, resetDatabase, truncateTickets } from './helpers';
 
 /**
  * Requisitos 4.6 e 4.7. Estas são as regras que quebram sem ninguém perceber:
@@ -68,7 +68,7 @@ describe('controle de acesso', () => {
 
   describe('isolamento de dados entre cidadãos', () => {
     beforeEach(async () => {
-      await prisma.$executeRawUnsafe('TRUNCATE TABLE ticket_events, tickets RESTART IDENTITY CASCADE');
+      await truncateTickets();
     });
 
     it('lista apenas os chamados do próprio usuário', async () => {

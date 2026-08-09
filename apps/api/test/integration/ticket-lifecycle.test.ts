@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { prisma } from '../../src/infra/prisma';
 import { updateTicketStatus } from '../../src/modules/tickets/ticket.service';
-import { app, createUser, loginAs, openTicket, resetDatabase } from './helpers';
+import { app, createUser, loginAs, openTicket, resetDatabase, truncateTickets } from './helpers';
 
 describe('ciclo de vida do chamado', () => {
   let citizenToken: string;
@@ -17,7 +17,7 @@ describe('ciclo de vida do chamado', () => {
   });
 
   beforeEach(async () => {
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE ticket_events, tickets RESTART IDENTITY CASCADE');
+    await truncateTickets();
   });
 
   afterAll(() => prisma.$disconnect());

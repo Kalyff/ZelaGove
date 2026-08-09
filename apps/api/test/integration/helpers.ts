@@ -10,17 +10,54 @@ export const app: Express = createApp();
 export const PASSWORD = 'senha-de-teste-123';
 
 /**
+ * Recusa rodar contra qualquer banco que não seja o de teste.
+ *
+ * Existe porque a alternativa já aconteceu: com a configuração antiga, o
+ * `.env.test` nunca era carregado, `DATABASE_URL` vinha do `.env` apontando
+ * para o banco de desenvolvimento, e `npm run test:integration` truncava o seed
+ * de quem estava desenvolvendo — em silêncio, com todos os testes verdes.
+ *
+ * O aviso em negrito no README não impediu, e o comentário no setup.ts dizia
+ * que estava resolvido quando não estava. Documentação não é controle; isto é.
+ */
+function assertTestDatabase() {
+  const url = process.env.DATABASE_URL ?? '';
+  const database = url.split('/').pop()?.split('?')[0] ?? '';
+
+  if (!database.endsWith('_test')) {
+    throw new Error(
+      `Os testes de integração TRUNCAM tabelas e só rodam contra um banco terminado em "_test".\n` +
+        `DATABASE_URL aponta para "${database}".\n` +
+        `Crie o banco e o arquivo de ambiente: veja a seção Testes do README.`
+    );
+  }
+}
+
+/**
  * TRUNCATE, não deleteMany: o trigger append-only recusa DELETE em
  * ticket_events. Se este helper parar de funcionar, é sinal de que alguém
  * removeu a proteção — o que é exatamente o que queremos que quebre alto.
  */
 export async function resetDatabase() {
+  assertTestDatabase();
   // `agencies` entra na lista para ficar idêntico ao que o seed faz. Seguro
   // porque `vitest.config.ts` fixa `fileParallelism: false`: os arquivos rodam
   // em série contra o mesmo banco.
   await prisma.$executeRawUnsafe(
     'TRUNCATE TABLE ticket_events, tickets, ticket_counters, agencies, users RESTART IDENTITY CASCADE'
   );
+}
+
+/**
+ * Limpa só os chamados, preservando usuários e órgãos criados no `beforeAll`.
+ *
+ * Existe como helper, e não como SQL solto em cada arquivo, para que TODO
+ * caminho destrutivo passe pelo mesmo `assertTestDatabase()`. Um arquivo novo
+ * que só truncasse no `beforeEach` escaparia do guard.
+ */
+export async function truncateTickets() {
+  assertTestDatabase();
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE ticket_events, tickets RESTART IDENTITY CASCADE');
 }
 
 export async function createUser(role: 'citizen' | 'admin', email: string, name = 'Fulano de Tal') {
