@@ -1,19 +1,25 @@
 import { m } from 'framer-motion';
-import { IconExit, IconList, IconPlus, SPRING } from '@zeladoria/ui';
+import { IconList, IconMap, IconPlus, SPRING } from '@zeladoria/ui';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
-
 
 /**
  * Barra inferior flutuante.
  *
- * O estado ativo agora vem do NavLink (roteador), não de uma prop passada à
- * mão — antes era possível a barra dizer que você está numa tela e o roteador
- * dizer outra.
+ * O estado ativo vem do NavLink (roteador), não de uma prop passada à mão —
+ * antes era possível a barra dizer que você está numa tela e o roteador dizer
+ * outra.
+ *
+ * Dois destinos, e não um. Antes havia só "Chamados", que era sempre a página
+ * corrente: tocá-lo não fazia nada, e uma barra de navegação com um destino é
+ * uma barra que não navega.
+ *
+ * "Sair" saiu daqui e foi para o cabeçalho das páginas. É a mesma regra que a
+ * sidebar do painel já aplica e documenta: sair é uma AÇÃO, não um destino, e
+ * não deve ser clicada por engano por quem estava procurando uma tela. De
+ * quebra, o FAB volta a ficar de fato centrado.
  */
 export function BottomNav() {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
 
   return (
     <nav
@@ -24,7 +30,7 @@ export function BottomNav() {
       className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center pb-[calc(1rem+var(--safe-b))]"
     >
       <div className="pointer-events-auto flex items-end gap-2 rounded-full border border-white/40 bg-white/70 px-3 py-2 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-surface-raised/75">
-        <NavItem to="/chamados" label="Chamados" Icon={IconList} />
+        <NavItem to="/chamados" label="Meus" Icon={IconList} />
 
         {/* FAB elevado acima da barra (requisito 3.1.3).
             O anel recorta o FAB da pílula de vidro, então acompanha a PÍLULA e
@@ -41,17 +47,7 @@ export function BottomNav() {
           <IconPlus className="h-7 w-7" />
         </m.button>
 
-        <button
-          type="button"
-          onClick={async () => {
-            await signOut();
-            navigate('/entrar', { replace: true });
-          }}
-          className="flex h-11 w-16 flex-col items-center justify-center gap-0.5 rounded-2xl text-content-tertiary transition-colors hover:text-content"
-        >
-          <IconExit className="h-5 w-5" />
-          <span className="font-display text-[10px] font-bold leading-none">Sair</span>
-        </button>
+        <NavItem to="/chamados/na-cidade" label="Na cidade" Icon={IconMap} />
       </div>
     </nav>
   );
@@ -88,9 +84,9 @@ function NavItem({
           <Icon className="h-5 w-5" />
           <span className="font-display text-[10px] font-bold leading-none">{label}</span>
           {/* Barra indicadora: o estado ativo não pode ser só cor.
-              Sem `layoutId` — ele exigiria o feature set `domMax`, que este app
-              não carrega, e com um único destino não haveria entre o que
-              deslizar. */}
+              Sem `layoutId`, mesmo agora que há dois destinos entre os quais
+              deslizar: ele exige o feature set `domMax`, e este app carrega só
+              `domAnimation` (ver o comentário no LazyMotion em App.tsx). */}
           {isActive && (
             <span className="absolute -bottom-0.5 h-[3px] w-6 rounded-full bg-accent" />
           )}

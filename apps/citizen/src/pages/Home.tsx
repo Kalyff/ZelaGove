@@ -15,6 +15,7 @@ import {
 import { m } from 'framer-motion';
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { SignOutButton } from '../components/SignOutButton';
 import { listMyTickets } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { firstName, shortDate } from '../lib/format';
@@ -46,7 +47,12 @@ export default function Home() {
       <header className="px-6 pb-4 pt-6">
         <div className="flex items-start justify-between gap-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-accent">gov.br</p>
-          <ThemeToggle />
+          {/* Sair veio da barra inferior para cá: é ação, não destino, e ao lado
+              dos botões de navegação era clicável por engano. */}
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <SignOutButton />
+          </div>
         </div>
         <h1 className="mt-1 font-display text-2xl font-extrabold text-content">
           Bem-vindo, {user ? firstName(user.name) : ''}

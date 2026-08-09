@@ -13,6 +13,11 @@ import { useRouteFocus } from '@zeladoria/ui';
 const DEPTH: Record<string, number> = {
   '/entrar': 1,
   '/chamados': 1,
+  /* Irmã de `/chamados`, não filha: as duas são destinos da barra inferior.
+     Sem esta linha ela cairia na regra genérica abaixo e viraria profundidade 2,
+     fazendo a troca entre abas animar como se estivesse entrando e saindo de um
+     detalhe. */
+  '/chamados/na-cidade': 1,
   '/chamados/novo': 2,
 };
 

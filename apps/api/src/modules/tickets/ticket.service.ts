@@ -275,6 +275,58 @@ export function listAllTickets(filters: {
   ]);
 }
 
+/** Teto da lista pública. Sem paginação por enquanto — ver README. */
+const PUBLIC_FEED_LIMIT = 50;
+
+/** Concluído some da lista pública depois disso. */
+const PUBLIC_FEED_DONE_WINDOW_DAYS = 30;
+
+/**
+ * Chamados de TODOS os cidadãos, para a lista "Na cidade".
+ *
+ * Este é o único lugar do sistema que devolve chamado alheio a um cidadão, e é
+ * intencional: serve para não abrir chamado duplicado e para ver que a
+ * prefeitura executa. Não confunda com `listCitizenTickets`, que segue escopado
+ * por `userId` — o isolamento continua valendo em todo o resto.
+ *
+ * O `select` é o CONTROLE DE SEGURANÇA, não o mapper.
+ *
+ * Com ele, `description`, `photoKey` e `userId` nunca saem do banco: expor o
+ * texto livre de outra pessoa (onde se escreve "em frente à minha casa, nº
+ * 120") ou a foto dela (com rosto, placa e fachada) deixa de ser questão de
+ * lembrar e passa a ser impossível de acontecer por descuido. Mesmo raciocínio
+ * do trigger append-only — a garantia não pode depender da disciplina de quem
+ * editar isto depois.
+ *
+ * `forwarded` fica de fora: saiu das mãos do município, e listá-lo como se
+ * fosse fila municipal seria enganoso.
+ */
+export function listPublicTickets() {
+  const doneSince = new Date(Date.now() - PUBLIC_FEED_DONE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+  return prisma.ticket.findMany({
+    where: {
+      OR: [
+        { status: { in: ['pending', 'in_progress'] } },
+        // Concluído recente é a prova de que o canal funciona. Sem janela, a
+        // lista viraria um arquivo histórico e afogaria o que está aberto.
+        { status: 'done', updatedAt: { gte: doneSince } },
+      ],
+    },
+    select: {
+      id: true,
+      protocol: true,
+      category: true,
+      status: true,
+      latitude: true,
+      longitude: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+    take: PUBLIC_FEED_LIMIT,
+  });
+}
+
 export async function getTicketForAdmin(ticketId: string) {
   const ticket = await prisma.ticket.findUnique({
     where: { id: ticketId },

@@ -59,6 +59,25 @@ export interface TicketDetailDTO extends TicketDTO {
   timeline: TimelineEventDTO[];
 }
 
+/**
+ * Chamado de OUTRA pessoa, na lista "Na cidade".
+ *
+ * Deliberadamente magro: sem título, descrição, foto ou qualquer traço de quem
+ * abriu. Não é a `TicketDTO` com campos opcionais — é outro tipo, para que
+ * nenhum componente escreva `ticket.description` achando que existe.
+ */
+export interface PublicTicketDTO {
+  id: string;
+  protocol: string;
+  category: TicketCategory;
+  categoryLabel: string;
+  status: TicketStatus;
+  statusLabel: string;
+  latitude: number;
+  longitude: number;
+  createdAt: string;
+}
+
 export class ApiError extends Error {
   constructor(public readonly code: string, message: string, public readonly field?: string) {
     super(message);
@@ -128,6 +147,11 @@ export function listMyTickets(): Promise<{ data: TicketDTO[]; total: number }> {
 
 export function getTicket(id: string): Promise<TicketDetailDTO> {
   return request(`/tickets/${id}`);
+}
+
+/** Chamados de todos os cidadãos, em projeção reduzida. Exige estar logado. */
+export function listPublicTickets(): Promise<{ data: PublicTicketDTO[]; total: number }> {
+  return request('/tickets/public');
 }
 
 export function createTicket(form: FormData): Promise<TicketDTO> {

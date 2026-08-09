@@ -1,5 +1,5 @@
-import type { Agency, Ticket, TicketEvent } from '@prisma/client';
-import { CATEGORY_LABELS, statusLabel } from '@zeladoria/shared';
+import type { Agency, Prisma, Ticket, TicketEvent } from '@prisma/client';
+import { CATEGORY_LABELS, statusLabel, type TicketCategory, type TicketStatus } from '@zeladoria/shared';
 import { photoStorage } from '../../infra/storage';
 
 type Audience = 'citizen' | 'admin';
@@ -53,6 +53,41 @@ export async function toTicketDTO(ticket: TicketWithAgency, audience: Audience) 
 
 export async function toTicketListDTO(tickets: TicketWithAgency[], audience: Audience) {
   return Promise.all(tickets.map((t) => toTicketDTO(t, audience)));
+}
+
+/**
+ * Chamado de OUTRA pessoa, como o cidadão o vê na lista "Na cidade".
+ *
+ * Função separada de propósito — `toTicketDTO` carrega `description`,
+ * `photoUrl` e os dados do encaminhamento, e reusá-la aqui exporia texto livre
+ * e foto de terceiros. **A lista de campos abaixo É a lista de permissão**, e o
+ * teste de integração compara o conjunto exato de chaves justamente para que
+ * um `...ticket` acidental quebre em vez de vazar.
+ *
+ * `protocol` entra porque é o que permite dizer "já existe o 2026-0000007 para
+ * isso"; ele não dá acesso a nada — a leitura do detalhe continua escopada por
+ * `userId`.
+ */
+export function toPublicTicketDTO(ticket: {
+  id: string;
+  protocol: string;
+  category: TicketCategory;
+  status: TicketStatus;
+  latitude: Prisma.Decimal;
+  longitude: Prisma.Decimal;
+  createdAt: Date;
+}) {
+  return {
+    id: ticket.id,
+    protocol: ticket.protocol,
+    category: ticket.category,
+    categoryLabel: CATEGORY_LABELS[ticket.category],
+    status: ticket.status,
+    statusLabel: statusLabel(ticket.status, 'citizen'),
+    latitude: Number(ticket.latitude),
+    longitude: Number(ticket.longitude),
+    createdAt: ticket.createdAt.toISOString(),
+  };
 }
 
 export async function toEventDTO(event: EventWithAgency, audience: Audience) {

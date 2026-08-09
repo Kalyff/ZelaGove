@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from './lib/auth';
 import Gateway from './pages/Gateway';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import NearbyTickets from './pages/NearbyTickets';
 import NewTicket from './pages/NewTicket';
 import TicketDetail from './pages/TicketDetail';
 
@@ -72,8 +73,13 @@ export default function App() {
                       </Route>
 
                       <Route element={<Protected />}>
+                        {/* Os dois destinos da barra inferior. A rota estática
+                            `na-cidade` convive com `/chamados/:id` abaixo: o
+                            React Router v6 classifica segmento fixo acima de
+                            dinâmico, como `/chamados/novo` já provava. */}
                         <Route element={<PhoneLayout withNav />}>
                           <Route path="/chamados" element={<Home />} />
+                          <Route path="/chamados/na-cidade" element={<NearbyTickets />} />
                         </Route>
                         <Route element={<PhoneLayout />}>
                           <Route path="/chamados/novo" element={<NewTicket />} />
