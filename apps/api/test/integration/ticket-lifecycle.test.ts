@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { prisma } from '../../src/infra/prisma';
+import { updateTicketStatus } from '../../src/modules/tickets/ticket.service';
 import { app, createUser, loginAs, openTicket, resetDatabase } from './helpers';
 
 describe('ciclo de vida do chamado', () => {
@@ -67,13 +68,47 @@ describe('ciclo de vida do chamado', () => {
       .field('status', 'done')
       .expect(422);
 
-    expect(res.body.error.code).toBe('COMPLETION_NOTE_REQUIRED');
+    /**
+     * `VALIDATION_ERROR`, e não `COMPLETION_NOTE_REQUIRED`.
+     *
+     * A regra tem DUAS linhas de defesa, e pelo HTTP quem responde é sempre a
+     * primeira: a rota faz `updateTicketStatusSchema.parse` antes de chamar o
+     * service, então o ZodError vira `VALIDATION_ERROR` no errorHandler e o
+     * `Errors.completionNoteRequired()` nunca chega a ser lançado por esse
+     * caminho. Este teste afirmava o contrário e falhava — só ninguém tinha
+     * rodado a suíte de integração para descobrir.
+     *
+     * O que importa para quem consome a API é o par status + `field`, que é o
+     * que o modal do painel usa para colocar a mensagem no campo certo. A
+     * segunda linha de defesa é exercida logo abaixo, chamando o service direto.
+     */
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
     expect(res.body.error.field).toBe('note');
 
     // E o status não pode ter mudado pela metade.
     const unchanged = await prisma.ticket.findUnique({ where: { id: ticket.id } });
     expect(unchanged?.status).toBe('pending');
     expect(await prisma.ticketEvent.count({ where: { ticketId: ticket.id } })).toBe(1);
+  });
+
+  /**
+   * A segunda linha de defesa, sem passar pelo schema.
+   *
+   * Existe porque o service é chamado por outros caminhos além da rota HTTP —
+   * seed, scripts de manutenção, e qualquer código futuro. Se a guarda sumir
+   * daqui, um chamado pode ser concluído sem ninguém documentar o que foi feito,
+   * e a auditoria vira ficção.
+   */
+  it('o service recusa conclusão sem observação mesmo sem o schema', async () => {
+    const ticket = await openTicket(citizenToken);
+    const admin = await prisma.user.findFirstOrThrow({ where: { role: 'admin' } });
+
+    await expect(
+      updateTicketStatus(ticket.id, admin.id, { status: 'done', note: '   ' }, null),
+    ).rejects.toMatchObject({ code: 'COMPLETION_NOTE_REQUIRED', status: 422, field: 'note' });
+
+    const unchanged = await prisma.ticket.findUnique({ where: { id: ticket.id } });
+    expect(unchanged?.status).toBe('pending');
   });
 
   it('conclui com observação e entrega a nota ao cidadão', async () => {
