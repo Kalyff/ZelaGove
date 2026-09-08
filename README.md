@@ -25,6 +25,15 @@ cp apps/citizen/.env.example apps/citizen/.env
 cp apps/admin/.env.example apps/admin/.env
 ```
 
+> **Já tem um Postgres na 5432?** Crie um `.env` na raiz com `DB_PORT=5441` (ou
+> outra porta livre) e ajuste o `DATABASE_URL` de `apps/api/.env` para a mesma
+> porta. O sintoma sem isso é traiçoeiro: o container sobe e fica `healthy` — o
+> healthcheck roda por dentro dele — mas o bind da porta falha, e o
+> `DATABASE_URL` acaba conectando no Postgres do outro projeto. O erro que
+> aparece é `P1000: Authentication failed`, que só é um bom desfecho por acaso:
+> se o outro banco tivesse um usuário `zeladoria`, as migrations e o `TRUNCATE`
+> do seed teriam ido parar lá dentro.
+
 Gere os dois segredos JWT e cole em `apps/api/.env`:
 
 ```bash

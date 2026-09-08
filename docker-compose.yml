@@ -7,7 +7,12 @@ services:
       POSTGRES_PASSWORD: zeladoria
       POSTGRES_DB: zeladoria
     ports:
-      - "5432:5432"
+      # Porta do HOST configurável: um Postgres de outro projeto já ocupando a
+      # 5432 é o caso comum, e o sintoma é traiçoeiro — o container sobe e fica
+      # `healthy` (o healthcheck roda por dentro), mas o bind falha e o
+      # DATABASE_URL passa a conectar no banco do outro projeto. Defina DB_PORT
+      # no `.env` da raiz para escapar do conflito.
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
