@@ -3,7 +3,9 @@ import {
   AGENCY_KIND_LABELS,
   CATEGORY_LABELS,
   SUGGESTED_AGENCY_KINDS,
+  type AgencyDTO,
   type AgencyKind,
+  type TicketDTO,
 } from '@zeladoria/shared';
 import {
   Button,
@@ -19,7 +21,8 @@ import {
   Textarea,
 } from '@zeladoria/ui';
 import { useEffect, useState } from 'react';
-import { listAgencies, type AgencyDTO, type TicketDTO } from '../lib/api';
+import { listAgencies } from '../lib/api';
+import { queryKeys } from '../lib/queryKeys';
 
 /**
  * Encaminhamento a órgão externo — espelha o `CompletionModal`, com uma
@@ -63,7 +66,7 @@ export function ForwardModal({
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['agencies'],
+    queryKey: queryKeys.agencies,
     queryFn: listAgencies,
     /* Só busca quando o modal abre: a lista de órgãos não interessa a mais
        ninguém no painel. */

@@ -7,13 +7,11 @@ import {
 } from '@zeladoria/shared';
 import { asyncHandler } from '../../http/asyncHandler';
 import { requireAuth, requireRole } from '../../middleware/auth';
-import { toTicketDTO, toTicketListDTO, toTimelineDTO } from './ticket.mapper';
+import { toMapPointDTO, toTicketDTO, toTicketListDTO, toTimelineDTO } from './ticket.mapper';
+import { getTicketForAdmin, listAllTickets, listTicketsForMap } from './ticket.queries';
 import {
   appendExternalProtocol,
   forwardTicket,
-  getTicketForAdmin,
-  listAllTickets,
-  listTicketsForMap,
   updateTicketStatus,
 } from './ticket.service';
 import { photoUpload, savePhotoIfPresent } from './upload';
@@ -33,22 +31,17 @@ adminTicketRoutes.get(
   })
 );
 
-/** Payload enxuto para o mapa (requisito 3.2.4). */
+/**
+ * Payload enxuto para o mapa (requisito 3.2.4).
+ *
+ * Registrada ANTES de `/:id`: o Express casa na ordem, e sem isto "map"
+ * chegaria como um id e a resposta seria 404.
+ */
 adminTicketRoutes.get(
   '/map',
   asyncHandler(async (_req, res) => {
     const tickets = await listTicketsForMap();
-    res.json({
-      data: tickets.map((t) => ({
-        id: t.id,
-        protocol: t.protocol,
-        title: t.title,
-        category: t.category,
-        status: t.status,
-        latitude: Number(t.latitude),
-        longitude: Number(t.longitude),
-      })),
-    });
+    res.json({ data: tickets.map(toMapPointDTO) });
   })
 );
 

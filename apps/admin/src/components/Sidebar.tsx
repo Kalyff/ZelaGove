@@ -10,7 +10,7 @@ import {
   cn,
 } from '@zeladoria/ui';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
+import { useAuth } from '@zeladoria/client';
 
 const ITEMS = [
   { to: '/painel/visao-geral', label: 'Visão geral', Icon: IconDashboard },

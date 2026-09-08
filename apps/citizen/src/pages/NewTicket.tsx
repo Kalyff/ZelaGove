@@ -1,5 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CATEGORY_LABELS, TICKET_CATEGORIES, type TicketCategory } from '@zeladoria/shared';
+import {
+  CATEGORY_LABELS,
+  TICKET_CATEGORIES,
+  coords,
+  type TicketCategory,
+  type TicketDTO,
+} from '@zeladoria/shared';
 import {
   Button,
   ErrorState,
@@ -16,8 +22,8 @@ import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PhotoUpload } from '../components/PhotoUpload';
 import { TicketCreated } from '../components/TicketCreated';
-import { ApiError, createTicket, type TicketDTO } from '../lib/api';
-import { coords } from '../lib/format';
+import { ApiError } from '@zeladoria/client';
+import { createTicket } from '../lib/api';
 import { useGeolocation } from '../hooks/useGeolocation';
 
 /** Campos que o servidor pode devolver em `ApiError.field` para esta tela. */

@@ -19,7 +19,7 @@ import {
   useTheme,
 } from '@zeladoria/ui';
 import { Link } from 'react-router-dom';
-import type { MapPointDTO } from '../lib/api';
+import type { MapPointDTO } from '@zeladoria/shared';
 
 const CENTER: [number, number] = [
   Number(import.meta.env.VITE_MAP_LAT ?? -9.97499),

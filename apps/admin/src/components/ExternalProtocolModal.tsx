@@ -1,6 +1,6 @@
 import { Button, ErrorState, Field, Input, Modal, Textarea } from '@zeladoria/ui';
 import { useEffect, useState } from 'react';
-import type { TicketDTO } from '../lib/api';
+import type { TicketDTO } from '@zeladoria/shared';
 
 /**
  * Anota o número que o órgão devolveu.

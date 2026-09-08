@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { distanceBetween, formatDistance } from '@zeladoria/shared';
+import {
+  distanceBetween,
+  formatDistance,
+  shortDate,
+  type PublicTicketDTO,
+} from '@zeladoria/shared';
 import {
   Button,
   EmptyState,
@@ -16,8 +21,7 @@ import { m } from 'framer-motion';
 import { useEffect, useMemo } from 'react';
 import { SignOutButton } from '../components/SignOutButton';
 import { useGeolocation } from '../hooks/useGeolocation';
-import { listPublicTickets, type PublicTicketDTO } from '../lib/api';
-import { shortDate } from '../lib/format';
+import { listPublicTickets } from '../lib/api';
 
 /**
  * "Na cidade": o que outras pessoas já registraram.

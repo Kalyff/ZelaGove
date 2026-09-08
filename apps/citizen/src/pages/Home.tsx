@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { forwardedNotice } from '@zeladoria/shared';
+import { firstName, forwardedNotice, shortDate } from '@zeladoria/shared';
 import {
   Button,
   EmptyState,
@@ -17,8 +17,7 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SignOutButton } from '../components/SignOutButton';
 import { listMyTickets } from '../lib/api';
-import { useAuth } from '../lib/auth';
-import { firstName, shortDate } from '../lib/format';
+import { useAuth } from '@zeladoria/client';
 
 export default function Home() {
   const { user } = useAuth();

@@ -3,8 +3,22 @@
 Como o pacote de UI é organizado e as armadilhas que ele evita de propósito.
 Voltar para o [README](../README.md).
 
-Consumido como fonte pelos dois apps, sem build step — igual a `packages/shared`.
-Exporta primitivos, ícones, hooks, tokens de movimento e o preset do Tailwind.
+Consumido como fonte pelos dois apps, sem build step — igual a
+`packages/shared` e `packages/client`. Exporta primitivos, ícones, hooks, tokens
+de movimento e o preset do Tailwind.
+
+**O que NÃO é daqui.** Este pacote responde por como as coisas aparecem. Valor
+de domínio, validação e a forma das respostas da API são de `packages/shared`;
+transporte HTTP e sessão são de `packages/client`. A fronteira importa: um
+componente que buscasse dado sozinho amarraria o design system à API e deixaria
+de ser testável isoladamente.
+
+**Mapas por status têm dono único** (`src/domain/`). `STATUS_ICON`,
+`STATUS_CHIP`, `STATUS_TIMELINE_NODE`, `STATUS_HEX` e os tokens do mapa saem
+todos daqui. O ícone por status já esteve copiado em três arquivos, e a
+consequência apareceu: as linhas do tempo distinguiam só "concluído" de todo o
+resto, então pendente e em deslocamento apareciam idênticos enquanto o chip ao
+lado os mostrava em cores diferentes.
 
 **Cor em três camadas.** Rampas primitivas (`gov-blue-600`, `ink-500`) →
 variáveis semânticas em `src/styles/tokens.css` → o mapa `colors` do preset, que

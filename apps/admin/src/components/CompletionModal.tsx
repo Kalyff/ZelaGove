@@ -1,6 +1,6 @@
 import { Button, ErrorState, Field, Modal, Textarea } from '@zeladoria/ui';
 import { useEffect, useState } from 'react';
-import type { TicketDTO } from '../lib/api';
+import type { TicketDTO } from '@zeladoria/shared';
 
 /**
  * Requisito 3.2.7. Disparado tanto pelo drag-and-drop quanto pelo seletor de

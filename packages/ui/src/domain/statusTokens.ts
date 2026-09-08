@@ -50,6 +50,20 @@ export const STATUS_CHIP: Record<TicketStatus, string> = {
 };
 
 /**
+ * Nó da linha do tempo — o círculo com o ícone do evento.
+ *
+ * Aqui e não em cada app: as duas timelines tinham este mapa copiado palavra
+ * por palavra, e a cor do evento tem de ser a mesma nas duas pontas. O cidadão
+ * e o servidor olham o mesmo histórico.
+ */
+export const STATUS_TIMELINE_NODE: Record<TicketStatus, string> = {
+  pending: 'bg-warn-soft text-warn-onSoft',
+  in_progress: 'bg-accent-soft text-accent-onSoft',
+  done: 'bg-success text-success-on',
+  forwarded: 'bg-ink-100 text-ink-700 dark:bg-surface-sunken dark:text-content-secondary',
+};
+
+/**
  * Raio do halo em METROS (requisito 3.2.4: maior para o que ainda demanda
  * ação). Em metros, e não em pixels, para o círculo escalar junto com o zoom —
  * em pixels os halos viram um borrão sólido ao afastar.

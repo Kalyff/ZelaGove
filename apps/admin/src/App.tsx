@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider, useAuth } from '@zeladoria/client';
 import { AnnouncerProvider, ThemeProvider, ToastProvider } from '@zeladoria/ui';
 import { LazyMotion, MotionConfig } from 'framer-motion';
 import type { ReactElement } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { AuthProvider, useAuth } from './lib/auth';
+import { client } from './lib/api';
 import Forwarded from './pages/Forwarded';
 import Login from './pages/Login';
 import MapZones from './pages/MapZones';
@@ -46,7 +47,8 @@ export default function App() {
         <AnnouncerProvider>
         <ToastProvider>
         <BrowserRouter>
-          <AuthProvider>
+          {/* Requisito 2.2: gestor não acessa o app do cidadão e vice-versa. */}
+          <AuthProvider client={client} role="admin" wrongAppMessage="Acesso negado.">
             <Routes>
               <Route path="/entrar" element={<Login />} />
               <Route path="/painel" element={<Protected><Shell /></Protected>}>

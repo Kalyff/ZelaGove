@@ -8,17 +8,14 @@
     "strict": true,
     "noUnusedLocals": true,
     "noFallthroughCasesInSwitch": true,
-    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@zeladoria/client": ["../../packages/client/src/index.ts"],
-      "@zeladoria/shared": ["../../packages/shared/src/index.ts"],
-      "@zeladoria/ui": ["../../packages/ui/src/index.ts"]
+      "@zeladoria/shared": ["../shared/src/index.ts"]
     }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src"]
 }

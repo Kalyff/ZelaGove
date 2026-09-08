@@ -9,7 +9,7 @@ import {
 import { m } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { TicketDTO } from '../lib/api';
+import type { TicketDTO } from '@zeladoria/shared';
 
 /**
  * Confirmação de abertura.

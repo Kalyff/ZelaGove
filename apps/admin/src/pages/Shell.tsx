@@ -4,8 +4,8 @@ import { m } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
-import { useAuth } from '../lib/auth';
-import { initials } from '../lib/format';
+import { useAuth } from '@zeladoria/client';
+import { initials } from '@zeladoria/shared';
 
 const TITLES: Record<string, string> = {
   '/painel/visao-geral': 'Visão geral',

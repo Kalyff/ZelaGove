@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      '@zeladoria/client': path.resolve(__dirname, '../../packages/client/src/index.ts'),
       '@zeladoria/shared': path.resolve(__dirname, '../../packages/shared/src/index.ts'),
       '@zeladoria/ui': path.resolve(__dirname, '../../packages/ui/src/index.ts'),
     },

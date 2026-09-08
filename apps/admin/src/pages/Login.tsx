@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
+import { useAuth } from '@zeladoria/client';
 
 const CITIZEN_URL = import.meta.env.VITE_CITIZEN_URL ?? 'http://localhost:5173';
 

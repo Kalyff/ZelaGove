@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider, useAuth } from '@zeladoria/client';
 import { AnnouncerProvider, ThemeProvider, ToastProvider } from '@zeladoria/ui';
 import { LazyMotion, MotionConfig } from 'framer-motion';
 import type { ReactElement } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { PhoneLayout } from './layouts/PhoneLayout';
-import { AuthProvider, useAuth } from './lib/auth';
+import { client } from './lib/api';
 import Gateway from './pages/Gateway';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -62,7 +63,15 @@ export default function App() {
             <AnnouncerProvider>
               <ToastProvider>
                 <BrowserRouter>
-                  <AuthProvider>
+                  {/* O papel é do app, não do usuário: sessão de gestor aberta
+                      aqui é recusada no login em vez de parecer válida até a
+                      primeira requisição voltar 403. Quem decide de verdade
+                      continua sendo o servidor (requisito 4.7). */}
+                  <AuthProvider
+                    client={client}
+                    role="citizen"
+                    wrongAppMessage="Esta conta é do Portal do Servidor."
+                  >
                     <Routes>
                       {/* Capa institucional — fora da moldura. */}
                       <Route path="/" element={<Gateway />} />

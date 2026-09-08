@@ -1,5 +1,5 @@
 import { IconExternal } from '@zeladoria/ui';
-import type { AgencyDTO } from '../lib/api';
+import type { AgencyDTO } from '@zeladoria/shared';
 
 /**
  * O que o cidadão precisa ler quando o chamado sai da prefeitura.

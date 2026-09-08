@@ -8,8 +8,9 @@ import {
   SkeletonText,
   StatusBadge,
 } from '@zeladoria/ui';
+import { coords, dateTime } from '@zeladoria/shared';
 import { getTicket } from '../lib/api';
-import { coords, dateTime } from '../lib/format';
+import { queryKeys } from '../lib/queryKeys';
 import { Timeline } from './Timeline';
 
 /** Requisito 3.2.6. */
@@ -26,7 +27,7 @@ export function TicketModal({
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['admin-ticket', ticketId],
+    queryKey: queryKeys.ticketDetail(ticketId),
     queryFn: () => getTicket(ticketId as string),
     enabled: !!ticketId,
   });

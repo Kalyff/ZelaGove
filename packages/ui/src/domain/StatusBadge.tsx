@@ -1,15 +1,8 @@
 import type { TicketStatus } from '@zeladoria/shared';
 import { cn } from '../lib/cn';
-import { IconCheck, IconClock, IconExternal, IconTruck } from '../icons';
 import { Badge } from '../primitives/Surfaces';
+import { STATUS_ICON } from './statusIcons';
 import { STATUS_CHIP } from './statusTokens';
-
-const ICONS: Record<TicketStatus, typeof IconClock> = {
-  pending: IconClock,
-  in_progress: IconTruck,
-  done: IconCheck,
-  forwarded: IconExternal,
-};
 
 export interface StatusBadgeProps {
   status: TicketStatus;
@@ -28,7 +21,7 @@ export interface StatusBadgeProps {
 export function StatusBadge({ status, label, onImage = false, className }: StatusBadgeProps) {
   return (
     <Badge
-      Icon={ICONS[status]}
+      Icon={STATUS_ICON[status]}
       className={cn(STATUS_CHIP[status], onImage && 'shadow-panel ring-1 ring-black/10', className)}
     >
       {label}

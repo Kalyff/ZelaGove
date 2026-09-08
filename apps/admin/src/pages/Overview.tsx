@@ -14,12 +14,13 @@ import {
   StatusBadge,
   useReducedMotionSafe,
 } from '@zeladoria/ui';
+import { dateTime } from '@zeladoria/shared';
 import { animate, m, useMotionValue, useTransform } from 'framer-motion';
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { StatusDistribution } from '../components/StatusDistribution';
 import { getMetrics } from '../lib/api';
-import { dateTime } from '../lib/format';
+import { queryKeys } from '../lib/queryKeys';
 
 type Tone = 'plain' | 'amber' | 'blue' | 'green';
 
@@ -105,7 +106,7 @@ function KpiCard({
 
 export default function Overview() {
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['metrics'],
+    queryKey: queryKeys.metrics,
     queryFn: getMetrics,
   });
 

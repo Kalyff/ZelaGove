@@ -9,11 +9,11 @@ import {
   SkeletonText,
   StatusBadge,
 } from '@zeladoria/ui';
+import { coords } from '@zeladoria/shared';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ForwardedNotice } from '../components/ForwardedNotice';
 import { Timeline } from '../components/Timeline';
 import { getTicket } from '../lib/api';
-import { coords } from '../lib/format';
 
 export default function TicketDetail() {
   const { id = '' } = useParams();

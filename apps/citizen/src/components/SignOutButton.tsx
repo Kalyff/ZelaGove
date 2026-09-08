@@ -1,6 +1,6 @@
 import { IconButton, IconExit } from '@zeladoria/ui';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
+import { useAuth } from '@zeladoria/client';
 
 /**
  * Sair, no cabeçalho.

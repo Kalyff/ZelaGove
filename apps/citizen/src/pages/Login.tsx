@@ -9,8 +9,7 @@ import {
 } from '@zeladoria/ui';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ApiError } from '../lib/api';
-import { useAuth } from '../lib/auth';
+import { ApiError, useAuth } from '@zeladoria/client';
 
 export default function Login() {
   const { signIn } = useAuth();

@@ -1,26 +1,7 @@
-import type { TicketStatus } from '@zeladoria/shared';
-import { IconCheck, IconClock, IconExternal, IconTruck } from '@zeladoria/ui';
-import type { TimelineEventDTO } from '../lib/api';
-import { timelineDate } from '../lib/format';
+import { timelineDate, type TimelineEventDTO } from '@zeladoria/shared';
+import { STATUS_ICON, STATUS_TIMELINE_NODE } from '@zeladoria/ui';
 
-/**
- * Ícone e tom por status. Antes só distinguia `done` de "todo o resto", então
- * pendente e em andamento apareciam idênticos na linha do tempo enquanto o
- * chip de status ao lado os mostrava em cores diferentes.
- */
-const ICONS: Record<TicketStatus, typeof IconClock> = {
-  pending: IconClock,
-  in_progress: IconTruck,
-  done: IconCheck,
-  forwarded: IconExternal,
-};
-
-const NODE: Record<TicketStatus, string> = {
-  pending: 'bg-warn-soft text-warn-onSoft',
-  in_progress: 'bg-accent-soft text-accent-onSoft',
-  done: 'bg-success text-success-on',
-  forwarded: 'bg-ink-100 text-ink-700 dark:bg-surface-sunken dark:text-content-secondary',
-};
+/* Ícone e cor do nó vêm do design system: são os mesmos do app do cidadão. */
 
 /** Histórico imutável do chamado (requisito 4.2). */
 export function Timeline({ events }: { events: TimelineEventDTO[] }) {
@@ -31,11 +12,11 @@ export function Timeline({ events }: { events: TimelineEventDTO[] }) {
         aria-hidden
       />
       {events.map((event) => {
-        const Icon = ICONS[event.status];
+        const Icon = STATUS_ICON[event.status];
         return (
           <li key={event.id} className="relative flex gap-3.5">
             <span
-              className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-surface-raised ${NODE[event.status]}`}
+              className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-surface-raised ${STATUS_TIMELINE_NODE[event.status]}`}
             >
               <Icon className="h-4 w-4" />
             </span>

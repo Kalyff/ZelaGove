@@ -3,12 +3,8 @@ import { createTicketSchema } from '@zeladoria/shared';
 import { asyncHandler } from '../../http/asyncHandler';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { toPublicTicketDTO, toTicketDTO, toTicketListDTO, toTimelineDTO } from './ticket.mapper';
-import {
-  createTicket,
-  getCitizenTicket,
-  listCitizenTickets,
-  listPublicTickets,
-} from './ticket.service';
+import { getCitizenTicket, listCitizenTickets, listPublicTickets } from './ticket.queries';
+import { createTicket } from './ticket.service';
 import { photoUpload, savePhotoIfPresent } from './upload';
 
 export const citizenTicketRoutes = Router();

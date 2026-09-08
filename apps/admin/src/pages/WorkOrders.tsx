@@ -10,14 +10,14 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BOARD_STATUSES, STATUS_LABELS_ADMIN, type TicketStatus } from '@zeladoria/shared';
 import {
-  ErrorState,
-  IconSearch,
-  Skeleton,
-  useAnnouncer,
-  useToast,
-} from '@zeladoria/ui';
+  BOARD_STATUSES,
+  STATUS_LABELS_ADMIN,
+  type TicketDTO,
+  type TicketPageDTO,
+  type TicketStatus,
+} from '@zeladoria/shared';
+import { ErrorState, IconSearch, Skeleton, useAnnouncer, useToast } from '@zeladoria/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { CompletionModal } from '../components/CompletionModal';
@@ -25,27 +25,21 @@ import { ForwardModal } from '../components/ForwardModal';
 import { KanbanCard } from '../components/KanbanCard';
 import { KanbanColumn } from '../components/KanbanColumn';
 import { TicketModal } from '../components/TicketModal';
+import { forwardTicket, listTickets, updateStatus } from '../lib/api';
 import { kanbanCoordinateGetter } from '../lib/kanbanKeyboard';
-import {
-  ApiError,
-  forwardTicket,
-  listTickets,
-  updateStatus,
-  type TicketDTO,
-  type TicketPageDTO,
-} from '../lib/api';
+import { invalidateTicketViews, queryKeys } from '../lib/queryKeys';
+import { useMutationError } from '../lib/useMutationError';
 
 export default function WorkOrders() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const { announce } = useAnnouncer();
+  const mutationError = useMutationError();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [completing, setCompleting] = useState<TicketDTO | null>(null);
   const [forwarding, setForwarding] = useState<TicketDTO | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [errorField, setErrorField] = useState<string | null>(null);
 
   /* A visão geral abre uma ordem por `?ticket=<id>`. */
   const openTicketId = searchParams.get('ticket');
@@ -62,7 +56,7 @@ export default function WorkOrders() {
   );
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['admin-tickets'],
+    queryKey: queryKeys.boardTickets,
     /* Só os status que viram coluna. Sem o filtro, os encaminhados ocupariam o
        teto de 100 linhas sem aparecer em lugar nenhum do quadro — e empurrariam
        chamados PENDENTES para fora da resposta. */
@@ -80,10 +74,10 @@ export default function WorkOrders() {
      * ter funcionado, e o servidor arrastava de novo.
      */
     onMutate: async (vars) => {
-      await queryClient.cancelQueries({ queryKey: ['admin-tickets'] });
-      const previous = queryClient.getQueryData<TicketPageDTO>(['admin-tickets']);
+      await queryClient.cancelQueries({ queryKey: queryKeys.boardTickets });
+      const previous = queryClient.getQueryData<TicketPageDTO>(queryKeys.boardTickets);
 
-      queryClient.setQueryData<TicketPageDTO>(['admin-tickets'], (old) =>
+      queryClient.setQueryData<TicketPageDTO>(queryKeys.boardTickets, (old) =>
         old
           ? {
               ...old,
@@ -109,22 +103,15 @@ export default function WorkOrders() {
       return { previous };
     },
     onError: (err: Error, _vars, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(['admin-tickets'], ctx.previous);
-      setError(err.message);
-      setErrorField(err instanceof ApiError ? (err.field ?? null) : null);
-      toast.error(err.message);
+      if (ctx?.previous) queryClient.setQueryData(queryKeys.boardTickets, ctx.previous);
+      mutationError.capture(err);
     },
     onSuccess: (_data, vars) => {
       setCompleting(null);
-      setError(null);
-      setErrorField(null);
+      mutationError.clear();
       announce(`Ordem movida para ${STATUS_LABELS_ADMIN[vars.status]}.`);
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
-      queryClient.invalidateQueries({ queryKey: ['metrics'] });
-      queryClient.invalidateQueries({ queryKey: ['map-points'] });
-    },
+    onSettled: () => invalidateTicketViews(queryClient),
   });
 
   /**
@@ -138,15 +125,10 @@ export default function WorkOrders() {
    */
   const forwardMutation = useMutation({
     mutationFn: forwardTicket,
-    onError: (err: Error) => {
-      setError(err.message);
-      setErrorField(err instanceof ApiError ? (err.field ?? null) : null);
-      toast.error(err.message);
-    },
+    onError: mutationError.capture,
     onSuccess: (ticket) => {
       setForwarding(null);
-      setError(null);
-      setErrorField(null);
+      mutationError.clear();
       toast.success(
         ticket.forwardedTo
           ? `Encaminhamento a ${ticket.forwardedTo.name} registrado. Falta enviar pelo canal do órgão.`
@@ -154,12 +136,7 @@ export default function WorkOrders() {
       );
       announce('Chamado encaminhado e removido do quadro.');
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
-      queryClient.invalidateQueries({ queryKey: ['forwarded-tickets'] });
-      queryClient.invalidateQueries({ queryKey: ['metrics'] });
-      queryClient.invalidateQueries({ queryKey: ['map-points'] });
-    },
+    onSettled: () => invalidateTicketViews(queryClient),
   });
 
   /**
@@ -190,8 +167,7 @@ export default function WorkOrders() {
 
   function requestStatusChange(ticket: TicketDTO, status: TicketStatus) {
     if (status === ticket.status) return;
-    setError(null);
-    setErrorField(null);
+    mutationError.clear();
     // Requisito 4.1: concluir sempre passa pelo modal, venha do arrasto ou do
     // seletor. Os demais status mudam direto.
     if (status === 'done') {
@@ -241,9 +217,9 @@ export default function WorkOrders() {
 
       {/* O banner é para o erro do ARRASTO. Quando um modal está aberto, a
           mensagem já aparece lá dentro — mostrá-la aqui também a duplicaria. */}
-      {error && !completing && !forwarding && (
+      {mutationError.message && !completing && !forwarding && (
         <div className="mb-4">
-          <ErrorState title="Não foi possível mover a ordem" description={error} />
+          <ErrorState title="Não foi possível mover a ordem" description={mutationError.message} />
         </div>
       )}
 
@@ -297,8 +273,7 @@ export default function WorkOrders() {
                       onOpen={() => setOpenTicketId(ticket.id)}
                       onStatusChange={(s) => requestStatusChange(ticket, s)}
                       onForward={() => {
-                        setError(null);
-                        setErrorField(null);
+                        mutationError.clear();
                         setForwarding(ticket);
                       }}
                     />
@@ -324,12 +299,11 @@ export default function WorkOrders() {
       <CompletionModal
         ticket={completing}
         busy={mutation.isPending}
-        error={error}
-        errorField={errorField}
+        error={mutationError.message}
+        errorField={mutationError.field}
         onCancel={() => {
           setCompleting(null);
-          setError(null);
-          setErrorField(null);
+          mutationError.clear();
         }}
         onConfirm={(note, photo) =>
           completing && mutation.mutate({ id: completing.id, status: 'done', note, photo })
@@ -339,12 +313,11 @@ export default function WorkOrders() {
       <ForwardModal
         ticket={forwarding}
         busy={forwardMutation.isPending}
-        error={error}
-        errorField={errorField}
+        error={mutationError.message}
+        errorField={mutationError.field}
         onCancel={() => {
           setForwarding(null);
-          setError(null);
-          setErrorField(null);
+          mutationError.clear();
         }}
         onConfirm={(input) => forwarding && forwardMutation.mutate({ id: forwarding.id, ...input })}
       />

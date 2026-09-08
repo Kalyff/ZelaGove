@@ -10,6 +10,7 @@ Voltar para o [README](../README.md).
 | `/` | Gateway público (requisito 2.3) |
 | `/entrar` | Login do cidadão |
 | `/chamados` | Meus chamados |
+| `/chamados/na-cidade` | Chamados de toda a cidade, em projeção reduzida |
 | `/chamados/novo` | Abertura de serviço |
 | `/chamados/:id` | Protocolo e linha do tempo |
 
@@ -34,6 +35,12 @@ Voltar para o [README](../README.md).
 - **Câmera sem biblioteca:** `<input type="file" accept="image/*" capture="environment">`.
 - **Localização é obrigatória para enviar.** Não há valor padrão — chutar o centro
   da cidade colocaria um ponto errado no mapa do gestor.
+- **"Na cidade" não leva ao detalhe, e não é esquecimento.** Não existe detalhe a
+  mostrar: o servidor manda categoria, status e local, e nada mais. A leitura
+  completa de um chamado continua escopada a quem o abriu.
+- **A ordenação por proximidade só roda quando o usuário pede.** A página nunca
+  aciona o GPS sozinha — pedir permissão sem o usuário ter solicitado nada é o
+  caminho mais rápido para um "bloquear" permanente naquele aparelho.
 
 ## Painel da prefeitura (`apps/admin`)
 
@@ -43,6 +50,7 @@ Voltar para o [README](../README.md).
 | `/painel/visao-geral` | KPIs e atividade recente |
 | `/painel/mapa` | Mapa de zonas (Leaflet) |
 | `/painel/ordens` | Kanban de ordens de serviço |
+| `/painel/encaminhados` | Chamados repassados a outro órgão, paginados |
 
 - **"Pendente" é âmbar em toda superfície, inclusive no mapa.** Os requisitos
   traziam âmbar nos KPIs (3.2.3) e vermelho no mapa (3.2.4) para o mesmo status.
@@ -74,6 +82,11 @@ Voltar para o [README](../README.md).
   colorido e disputa atenção com os círculos de status. Uso público de qualquer
   provedor tem política de uso aceitável e não é adequado para produção em
   volume; avalie antes de publicar. A atribuição precisa creditar OSM **e** CARTO.
+- **"Encaminhados" é destino próprio, não uma quarta coluna do quadro.**
+  `forwarded` é terminal e acumula para sempre; virar coluna faria os pendentes
+  saírem em silêncio da resposta de 100 linhas do Kanban. Lá há paginação de
+  verdade, e a tela também diz o que o sistema NÃO faz — ele registrou o
+  encaminhamento, não entregou nada a ninguém.
 - **Sem biblioteca de gráfico na visão geral.** O `/admin/metrics` devolve quatro
   contadores e cinco chamados: nenhuma série temporal, nenhum recorte por
   categoria, nenhum SLA. Uma biblioteca desenharia tendência sobre dado que não

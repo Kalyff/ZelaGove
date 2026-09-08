@@ -49,10 +49,12 @@ export { ThemeToggle } from './primitives/ThemeToggle';
 /* ---- domínio --------------------------------------------------------- */
 export { StatusBadge } from './domain/StatusBadge';
 export type { StatusBadgeProps } from './domain/StatusBadge';
+export { STATUS_ICON } from './domain/statusIcons';
 export {
   STATUS_HEX,
   STATUS_HEX_DARK,
   STATUS_CHIP,
+  STATUS_TIMELINE_NODE,
   DOT_STROKE,
   HEAT_RADIUS_M,
   HEAT_OPACITY,

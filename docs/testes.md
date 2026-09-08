@@ -24,6 +24,7 @@ derruba a aplicação, só entrega dado de um cidadão para outro.
 | `apps/api/test/integration/forwarding.test.ts` | Encaminhamento de chamados |
 | `apps/api/test/integration/public-feed.test.ts` | Feed público de chamados |
 | `packages/shared/test/distance.test.ts` | Cálculo de distância |
+| `packages/shared/test/format.test.ts` | Data, coordenada e nome — formatação compartilhada pelos dois apps |
 | `packages/ui/test/Modal.test.tsx` | Componente `Modal` |
 | `packages/ui/test/Toast.test.tsx` | Componente `Toast` |
 | `packages/ui/test/motion-safety.test.tsx` | Conteúdo não depende de animação para existir |

@@ -1,6 +1,9 @@
 # Zeladoria.gov
 
-Sistema de chamados de zeladoria urbana: API, PWA do cidadão e painel da prefeitura.
+Sistema de chamados de zeladoria urbana: API, PWA do cidadão e painel da
+prefeitura. O cidadão registra um problema na rua com foto e localização; a
+prefeitura acompanha, executa e responde — ou encaminha ao órgão competente, com
+registro auditável dos dois lados.
 
 ## Pré-requisitos
 
@@ -13,7 +16,7 @@ Sistema de chamados de zeladoria urbana: API, PWA do cidadão e painel da prefei
 # 1. Infra (Postgres+PostGIS e MinIO)
 docker compose up -d
 
-# 2. Dependências
+# 2. Dependências de todos os workspaces
 npm install
 
 # 3. Ambiente
@@ -28,27 +31,30 @@ Gere os dois segredos JWT e cole em `apps/api/.env`:
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
-Banco — migration, hardening e seed:
+Banco — migration, hardening (PostGIS e o trigger append-only) e seed, num
+comando só:
 
 ```bash
-cd apps/api
-npx prisma migrate dev --name init
-npx tsx prisma/hardening.ts
-npx tsx prisma/seed.ts
+npm run db:setup
 ```
+
+> O `db:setup` também gera o Prisma Client. Sem ele, `npm run typecheck` falha
+> em `apps/api` com "Module '@prisma/client' has no exported member" — o
+> `npm install` sozinho não gera o cliente. Para gerar só isso:
+> `npm exec --workspace @zeladoria/api -- prisma generate`.
 
 ## Como rodar
 
 Três terminais:
 
 ```bash
-# API (a partir de apps/api)
-npm run dev
+# API
+npm run dev:api
 
-# PWA do cidadão (a partir da raiz)
+# PWA do cidadão
 npm run dev --workspace @zeladoria/citizen
 
-# Painel da prefeitura (a partir da raiz)
+# Painel da prefeitura
 npm run dev --workspace @zeladoria/admin
 ```
 
@@ -67,10 +73,13 @@ npm run dev --workspace @zeladoria/admin
 | Cidadão | `joao@email.com` |
 | Cidadão | `ana@email.com` |
 
+O seed também cadastra os órgãos externos usados no encaminhamento.
+
 ### Testando no celular
 
 - Geolocalização e câmera só funcionam em contexto seguro.
-- `localhost` é exceção; abrir pelo IP da rede local **não** é — o GPS falha em silêncio.
+- `localhost` é exceção; abrir pelo IP da rede local **não** é — o GPS falha em
+  silêncio.
 - Use túnel HTTPS (ngrok, cloudflared) ou certificado local (mkcert) e aponte
   `VITE_API_URL` para a URL pública da API.
 
@@ -124,10 +133,25 @@ apps/
   citizen/   PWA do cidadão (Vite + React)
   admin/     Painel da prefeitura (Vite + React + Leaflet)
 packages/
-  shared/    Enums, schemas Zod e rótulos compartilhados
+  shared/    Domínio e contrato: enums, schemas Zod, rótulos, DTOs, formatação
+  client/    Plataforma de front-end: transporte HTTP e sessão
   ui/        Design system: primitivos, ícones, hooks e preset do Tailwind
 docs/        Documentação estendida
 ```
+
+Os três pacotes são consumidos como **fonte**, sem build step, por alias no
+`vite.config.ts` e `paths` no `tsconfig.json` de cada app. A divisão entre eles
+é por responsabilidade, e vale como regra ao escrever código novo:
+
+| Pacote | Responde por | Quem consome |
+|---|---|---|
+| `@zeladoria/shared` | o que é verdade em qualquer camada: valores do domínio, validação e a forma exata das respostas da API | API, cidadão, painel |
+| `@zeladoria/client` | falar com a API: token, retry de refresh, sessão | cidadão, painel |
+| `@zeladoria/ui` | como as coisas aparecem: primitivos, cor, movimento, acessibilidade | cidadão, painel |
+
+Os DTOs de `shared` são o mesmo tipo que o mapper do servidor declara como
+retorno, então remover um campo da resposta quebra a compilação em vez de
+quebrar a tela.
 
 ## Como rodar os testes
 
@@ -149,10 +173,11 @@ cd ../.. && npm run test:integration
 ```
 
 **Use um banco separado.** Os testes de integração truncam tabelas a cada arquivo
-— apontar para o banco de desenvolvimento apaga seu seed.
+— apontar para o banco de desenvolvimento apaga seu seed. Um guard recusa rodar
+contra banco cujo nome não termine em `_test`.
 
-O CI (`.github/workflows/ci.yml`) sobe um Postgres+PostGIS, aplica migration e
-hardening, e roda typecheck, unitários e integração.
+O CI (`.github/workflows/ci.yml`) sobe um Postgres+PostGIS, gera o Prisma
+Client, aplica migration e hardening, e roda typecheck, unitários e integração.
 
 Mapa de qual teste protege qual regra: [docs/testes.md](docs/testes.md).
 

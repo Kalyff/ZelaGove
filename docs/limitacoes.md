@@ -28,6 +28,14 @@ Voltar para o [README](../README.md).
 - **Tipografia:** o design system oficial usa Rawline, que não está no Google
   Fonts. Substituí por Raleway + Inter. Se a identidade precisar ser fiel,
   é preciso hospedar a fonte oficial.
+- **O Login do painel não usa o design system.** É o único arquivo dos dois apps
+  com `<input class="field-input">` e `<button>` crus em vez de `Field`/`Input`/
+  `Button`, e o único que ignora o `field` do erro do servidor: a mensagem sai
+  como "Acesso negado." sem apontar qual campo está errado. Migrar mexe no
+  visual da tela, então ficou fora da refatoração estrutural.
+- **Fins de linha misturados.** Treze arquivos estão em CRLF e o resto em LF.
+  Normalizar pede um `.gitattributes` e um commit que toca só isso — de outro
+  jeito o ruído se mistura a mudanças reais.
 - **Versões das dependências precisam ser conferidas.** Foram fixadas em faixas
   conhecidas, mas podem estar desatualizadas — rode `npm outdated` e `npm audit`
   antes de seguir.

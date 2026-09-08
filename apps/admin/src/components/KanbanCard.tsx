@@ -1,9 +1,13 @@
 import { useDraggable } from '@dnd-kit/core';
-import { BOARD_STATUSES, type TicketStatus, STATUS_LABELS_ADMIN } from '@zeladoria/shared';
+import {
+  BOARD_STATUSES,
+  STATUS_LABELS_ADMIN,
+  dateTime,
+  type TicketDTO,
+  type TicketStatus,
+} from '@zeladoria/shared';
 import { IconExternal, IconGrip, STATUS_HEX, STATUS_HEX_DARK, cn, useTheme } from '@zeladoria/ui';
 import { m } from 'framer-motion';
-import type { TicketDTO } from '../lib/api';
-import { dateTime } from '../lib/format';
 
 export function KanbanCard({
   ticket,

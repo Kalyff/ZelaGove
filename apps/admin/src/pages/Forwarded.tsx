@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AGENCY_KIND_LABELS } from '@zeladoria/shared';
+import { AGENCY_KIND_LABELS, dateTime, type TicketDTO } from '@zeladoria/shared';
 import {
   Button,
   Card,
@@ -17,14 +17,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ExternalProtocolModal } from '../components/ExternalProtocolModal';
 import { TicketModal } from '../components/TicketModal';
-import {
-  ApiError,
-  appendExternalProtocol,
-  listTickets,
-  updateStatus,
-  type TicketDTO,
-} from '../lib/api';
-import { dateTime } from '../lib/format';
+import { appendExternalProtocol, listTickets, updateStatus } from '../lib/api';
+import { invalidateTicketViews, queryKeys } from '../lib/queryKeys';
+import { useMutationError } from '../lib/useMutationError';
 
 const PER_PAGE = 20;
 
@@ -44,10 +39,9 @@ export default function Forwarded() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const { announce } = useAnnouncer();
+  const mutationError = useMutationError();
   const [searchParams, setSearchParams] = useSearchParams();
   const [annotating, setAnnotating] = useState<TicketDTO | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [errorField, setErrorField] = useState<string | null>(null);
 
   const page = Math.max(1, Number(searchParams.get('pagina') ?? 1) || 1);
   const openTicketId = searchParams.get('ticket');
@@ -62,7 +56,7 @@ export default function Forwarded() {
   };
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['forwarded-tickets', page],
+    queryKey: [...queryKeys.forwardedTickets, page],
     queryFn: () => listTickets({ status: ['forwarded'], page, perPage: PER_PAGE }),
   });
 
@@ -119,27 +113,14 @@ export default function Forwarded() {
     setParams({ pagina: String(lastPage) });
   }, [data, page, lastPage]);
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['forwarded-tickets'] });
-    queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
-    queryClient.invalidateQueries({ queryKey: ['admin-ticket'] });
-    queryClient.invalidateQueries({ queryKey: ['metrics'] });
-    queryClient.invalidateQueries({ queryKey: ['map-points'] });
-  };
-
-  const onMutationError = (err: Error) => {
-    setError(err.message);
-    setErrorField(err instanceof ApiError ? (err.field ?? null) : null);
-    toast.error(err.message);
-  };
+  const invalidate = () => invalidateTicketViews(queryClient);
 
   const protocolMutation = useMutation({
     mutationFn: appendExternalProtocol,
-    onError: onMutationError,
+    onError: mutationError.capture,
     onSuccess: () => {
       setAnnotating(null);
-      setError(null);
-      setErrorField(null);
+      mutationError.clear();
       toast.success('Protocolo anotado na linha do tempo.');
     },
     onSettled: invalidate,
@@ -152,7 +133,7 @@ export default function Forwarded() {
    */
   const revertMutation = useMutation({
     mutationFn: updateStatus,
-    onError: onMutationError,
+    onError: mutationError.capture,
     onSuccess: () => {
       toast.success('Chamado devolvido para a fila municipal.');
       announce('Chamado devolvido para pendentes.');
@@ -246,8 +227,7 @@ export default function Forwarded() {
                       size="sm"
                       variant="secondary"
                       onClick={() => {
-                        setError(null);
-                        setErrorField(null);
+                        mutationError.clear();
                         setAnnotating(ticket);
                       }}
                     >
@@ -315,12 +295,11 @@ export default function Forwarded() {
       <ExternalProtocolModal
         ticket={annotating}
         busy={protocolMutation.isPending}
-        error={error}
-        errorField={errorField}
+        error={mutationError.message}
+        errorField={mutationError.field}
         onCancel={() => {
           setAnnotating(null);
-          setError(null);
-          setErrorField(null);
+          mutationError.clear();
         }}
         onConfirm={(input) =>
           annotating && protocolMutation.mutate({ id: annotating.id, ...input })
