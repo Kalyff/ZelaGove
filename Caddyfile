@@ -1,0 +1,64 @@
+# Caddyfile — Zeladoria.gov em produção.
+#
+# O Caddy emite e renova os certificados sozinho pelo Let's Encrypt, desde que
+# as portas 80 e 443 estejam abertas E os domínios apontem para o IP da VM.
+# Na Oracle Cloud o firewall é DUPLO: liberar na Security List da VCN não basta,
+# é preciso liberar também no iptables da instância.
+{
+	email {$ACME_EMAIL}
+}
+
+# ---------------------------------------------------------------- cidadão + API
+#
+# O PWA e a API na MESMA origem, de propósito:
+#
+#  - o app do cidadão fica sem CORS nenhum;
+#  - o cookie de refresh (`sameSite: lax`, `path: /api/v1/auth`) é enviado sem
+#    ressalva;
+#  - o manifesto do PWA declara `start_url: '/'` e o Vite não define `base`, o
+#    que já obriga este app a morar na raiz do domínio.
+{$CITIZEN_DOMAIN} {
+	encode zstd gzip
+
+	handle /api/v1/* {
+		reverse_proxy api:3333
+	}
+
+	handle {
+		root * /srv/citizen
+		# O service worker precisa ser revalidado a cada carga; se ele for
+		# cacheado, o usuário fica preso numa versão antiga do app para sempre.
+		@sw path /sw.js /registerSW.js
+		header @sw Cache-Control "no-cache"
+		# Fallback de SPA: as rotas do react-router não existem como arquivo.
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# --------------------------------------------------------------------- painel
+#
+# Subdomínio, e não subpasta: as rotas do painel são `/entrar` e `/painel/*`, e
+# servi-lo sob um prefixo exigiria mexer no `base` do Vite. Continua sendo o
+# mesmo domínio registrável que o app do cidadão, então o cookie de sessão
+# permanece same-site — é isso que faz o refresh funcionar nos dois.
+{$ADMIN_DOMAIN} {
+	encode zstd gzip
+	root * /srv/admin
+	try_files {path} /index.html
+	file_server
+}
+
+# -------------------------------------------------------------------- storage
+#
+# As fotos saem como URL ASSINADA apontando para este domínio, e a assinatura
+# cobre o Host. O `reverse_proxy` do Caddy repassa o Host original, então a
+# assinatura confere do outro lado. Trocar este domínio invalida apenas as URLs
+# já emitidas, que vivem 300s.
+{$STORAGE_DOMAIN} {
+	# Foto de celular recomprimida cabe folgado; o limite corta abuso.
+	request_body {
+		max_size 20MB
+	}
+	reverse_proxy storage:9000
+}

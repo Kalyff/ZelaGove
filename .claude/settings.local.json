@@ -16,7 +16,9 @@
       "Bash(\"/c/Users/kalyf/AppData/Local/Microsoft/WinGet/Packages/Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe/ngrok.exe\" http *)",
       "Bash(\"/c/Users/kalyf/AppData/Local/Microsoft/WinGet/Packages/Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe/ngrok.exe\" update *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://grievance-reopen-freebase.ngrok-free.dev)",
-      "Bash(curl -s -X POST https://grievance-reopen-freebase.ngrok-free.dev/api/v1/auth/login -H 'Content-Type: application/json' -H 'ngrok-skip-browser-warning: true' -d '{\"email\":\"joao@email.com\",\"password\":\"senha123\"}')"
+      "Bash(curl -s -X POST https://grievance-reopen-freebase.ngrok-free.dev/api/v1/auth/login -H 'Content-Type: application/json' -H 'ngrok-skip-browser-warning: true' -d '{\"email\":\"joao@email.com\",\"password\":\"senha123\"}')",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }

@@ -84,6 +84,18 @@ npm run dev --workspace @zeladoria/admin
 
 O seed também cadastra os órgãos externos usados no encaminhamento.
 
+Fora do desenvolvimento não existe seed, e portanto não existe nenhum usuário.
+Para criar a primeira conta de gestor:
+
+```bash
+npm run create-admin --workspace @zeladoria/api -- \
+  --email gestor@prefeitura.gov.br --nome "Marina Duarte"
+```
+
+A senha é pedida em seguida, sem eco — nunca como argumento, que ficaria no
+histórico do shell e apareceria num `ps`. O script recusa e-mail já existente:
+ele cria contas, não redefine senha.
+
 ### Testando no celular
 
 - Geolocalização e câmera só funcionam em contexto seguro.
@@ -146,6 +158,11 @@ packages/
   client/    Plataforma de front-end: transporte HTTP e sessão
   ui/        Design system: primitivos, ícones, hooks e preset do Tailwind
 docs/        Documentação estendida
+
+docker-compose.yml       infra local (Postgres+PostGIS e MinIO)
+docker-compose.prod.yml  a pilha de produção — ver docs/deploy.md
+Dockerfile               dois alvos: `api` (Node) e `web` (Caddy + front-ends)
+Caddyfile                TLS automático e a topologia de domínios
 ```
 
 Os três pacotes são consumidos como **fonte**, sem build step, por alias no
@@ -190,6 +207,24 @@ Client, aplica migration e hardening, e roda typecheck, unitários e integraçã
 
 Mapa de qual teste protege qual regra: [docs/testes.md](docs/testes.md).
 
+## Deploy
+
+Uma VM só, com Docker — `docker-compose.prod.yml`, `Dockerfile` e `Caddyfile`
+na raiz. O Caddy cuida do TLS; Postgres e MinIO não publicam porta.
+
+```bash
+cp .env.production.example .env.production   # preencha antes
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+```
+
+Duas coisas que decidem o desenho e surpreendem quem não sabe: o cookie de
+sessão é `sameSite: 'lax'`, então os três domínios precisam ser subdomínios do
+**mesmo** domínio registrável; e as `VITE_*` são assadas no bundle em tempo de
+build, então trocar de domínio exige reconstruir a imagem.
+
+O passo a passo, incluindo o que abrir no firewall da Oracle Cloud e por que a
+imagem do PostGIS é trocada em ARM: [docs/deploy.md](docs/deploy.md).
+
 ## Como contribuir
 
 Antes de abrir PR, rode localmente o que o CI roda:
@@ -204,6 +239,7 @@ npm run test:integration
 
 - [docs/api.md](docs/api.md) — endpoints e verificação manual das regras críticas
 - [docs/arquitetura.md](docs/arquitetura.md) — decisões registradas no código
+- [docs/deploy.md](docs/deploy.md) — subir numa VM: topologia, domínios e armadilhas
 - [docs/design-system.md](docs/design-system.md) — `packages/ui`, cor, movimento e armadilhas do Tailwind
 - [docs/telas.md](docs/telas.md) — rotas e decisões de interface dos dois apps
 - [docs/testes.md](docs/testes.md) — o que a suíte protege

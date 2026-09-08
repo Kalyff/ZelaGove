@@ -1,0 +1,123 @@
+# Produção numa VM só (testado como alvo a Ampere A1 do Always Free da Oracle).
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Diferenças deliberadas em relação ao docker-compose.yml de desenvolvimento:
+#
+#  - Postgres e MinIO NÃO publicam porta no host. Quem fala com eles é a rede
+#    interna do compose; o que o mundo enxerga é só o Caddy, nas portas 80/443.
+#  - A imagem do PostGIS é a multi-arch. A `postgis/postgis` oficial publica
+#    somente amd64 e simplesmente não sobe numa VM ARM.
+#  - Tudo com `restart: unless-stopped`, para a pilha voltar sozinha no boot.
+
+services:
+  db:
+    # `imresamu/postgis` é o build multi-arch do mesmo mantenedor das imagens
+    # oficiais do PostGIS. Alternativa equivalente: ghcr.io/baosystems/postgis.
+    image: imresamu/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  storage:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+    volumes:
+      - storage_data:/data
+    # O console (9001) fica sem publicação de propósito. Para abri-lo, um túnel:
+    #   ssh -L 9001:localhost:9001 ubuntu@<ip> -- depois de publicar a porta só
+    #   em 127.0.0.1, ou `docker compose exec`.
+
+  api:
+    build:
+      context: .
+      target: api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3333
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      CORS_ORIGINS: https://${ADMIN_DOMAIN}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
+      REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-7d}
+      # Endereço PÚBLICO: é ele que entra na URL assinada que o navegador do
+      # cidadão vai buscar. Um `http://storage:9000` interno geraria uma URL que
+      # só funciona dentro da rede do Docker.
+      S3_ENDPOINT: https://${STORAGE_DOMAIN}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_FORCE_PATH_STYLE: "true"
+      PHOTO_URL_TTL_SECONDS: ${PHOTO_URL_TTL_SECONDS:-300}
+    # Migration e hardening antes de servir. Os dois são idempotentes — o
+    # hardening é todo CREATE OR REPLACE / DROP IF EXISTS — então repetir a cada
+    # boot é seguro. O hardening NÃO é opcional: é ele que cria a extensão
+    # PostGIS e os triggers que tornam a trilha de auditoria append-only.
+    # O seed fica de fora: ele começa com um TRUNCATE.
+    command: sh -c "npx prisma migrate deploy && npx tsx prisma/hardening.ts && npx tsx src/main.ts"
+
+  web:
+    build:
+      context: .
+      target: web
+      args:
+        # Assadas no bundle em tempo de BUILD. Mudar de domínio exige
+        # reconstruir a imagem; não adianta editar o .env e reiniciar.
+        VITE_API_URL: https://${CITIZEN_DOMAIN}/api/v1
+        VITE_ADMIN_URL: https://${ADMIN_DOMAIN}
+        VITE_CITIZEN_URL: https://${CITIZEN_DOMAIN}
+        VITE_MAP_LAT: ${VITE_MAP_LAT}
+        VITE_MAP_LNG: ${VITE_MAP_LNG}
+        VITE_MAP_ZOOM: ${VITE_MAP_ZOOM}
+    restart: unless-stopped
+    depends_on:
+      - api
+      - storage
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      CITIZEN_DOMAIN: ${CITIZEN_DOMAIN}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN}
+      STORAGE_DOMAIN: ${STORAGE_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Os certificados precisam sobreviver a um recreate do container, ou o
+      # Let's Encrypt barra por limite de emissões.
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      default:
+        aliases:
+          # A API busca o MinIO pelo endereço PÚBLICO (é o que assina a URL).
+          # Sem este alias, esse nome resolveria pelo DNS da internet, sairia
+          # da VM e voltaria pelo IP público — hairpin NAT, que funciona por
+          # sorte e acrescenta uma volta de rede. Com ele, o nome resolve
+          # direto para este container, e o certificado do Caddy é válido para
+          # ele do mesmo jeito.
+          - ${STORAGE_DOMAIN}
+
+volumes:
+  db_data:
+  storage_data:
+  caddy_data:
+  caddy_config:

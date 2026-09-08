@@ -3,6 +3,12 @@
 O que ainda não está resolvido e o que cada item exige para evoluir.
 Voltar para o [README](../README.md).
 
+- **Não há cadastro de cidadão pela interface.** Contas só nascem pelo `seed.ts`
+  em desenvolvimento ou pelo `create-admin`, que cria gestor. Um cidadão não
+  consegue se registrar sozinho — falta a tela e falta a rota.
+- **Não há troca nem recuperação de senha.** A senha definida no cadastro é
+  definitiva até alguém mexer no banco. O `create-admin` recusa e-mail existente
+  de propósito, então nem ele serve de escape.
 - **Logout não revoga o refresh token** (JWT stateless). A evolução é uma tabela de
   sessões com `jti`. Aceito no protótipo, não em produção.
 - **URL de foto é presigned de vida curta.** Uma vez emitida, vale para quem a
