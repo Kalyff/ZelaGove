@@ -22,10 +22,22 @@ export default defineConfig({
         display: 'standalone',
         background_color: '#FFFFFF',
         theme_color: '#1351B4',
+        /**
+         * Dois ARQUIVOS distintos, não o mesmo em dois papéis.
+         *
+         * O `maskable` é recortado pelo sistema — no Android vira círculo,
+         * squircle ou o que a fabricante escolher. A marca é um quadrado
+         * arredondado de cantos transparentes: servida como maskable, o recorte
+         * comeria as bordas e sobraria o pino encostado na borda do círculo.
+         *
+         * Por isso o maskable tem fundo sangrando e o pino reduzido a 44% do
+         * quadro, dentro da zona segura de 80% que todo formato de máscara
+         * preserva. O `any` continua sendo a marca como desenhada.
+         */
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
     }),
