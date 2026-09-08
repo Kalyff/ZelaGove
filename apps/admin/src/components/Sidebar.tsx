@@ -6,6 +6,7 @@ import {
   IconExternal,
   IconKanban,
   IconMap,
+  PrefeituraLogo,
   ThemeToggle,
   cn,
 } from '@zeladoria/ui';
@@ -48,9 +49,14 @@ export function Sidebar({
       )}
     >
       <div className="flex items-start justify-between px-6 py-7">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-gov-yellow-400">gov.br</p>
-          <p className="mt-1 font-display text-xl font-extrabold">Zeladoria</p>
+        <div className="flex items-center gap-3">
+          {/* Pequeno: aqui ele identifica o município sem competir com a
+              navegação, que é o que a pessoa veio usar. */}
+          <PrefeituraLogo size={52} className="shrink-0" />
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-gov-yellow-400">gov.br</p>
+            <p className="mt-1 font-display text-xl font-extrabold">Zeladoria</p>
+          </div>
         </div>
         {inSheet && (
           <IconButton label="Fechar menu" onChrome onClick={onNavigate}>

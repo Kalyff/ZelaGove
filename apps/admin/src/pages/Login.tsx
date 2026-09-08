@@ -1,3 +1,4 @@
+import { PrefeituraLogo } from '@zeladoria/ui';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@zeladoria/client';
@@ -36,7 +37,10 @@ export default function Login() {
           <div className="w-1/3 bg-stripe-b" />
         </div>
         <div>
-          <p className="font-mono text-xs uppercase tracking-[0.3em] text-gov-yellow-400">gov.br</p>
+          {/* Sobre o azul institucional o brasão precisa da placa clara: a ponte
+              e o texto do logo são pretos. */}
+          <PrefeituraLogo size={104} />
+          <p className="mt-6 font-mono text-xs uppercase tracking-[0.3em] text-gov-yellow-400">gov.br</p>
           <h1 className="mt-3 font-display text-4xl font-extrabold leading-tight">Portal do Servidor</h1>
           <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-chrome-secondary">
             Gestão operacional dos chamados de zeladoria urbana: acompanhamento, despacho de equipes

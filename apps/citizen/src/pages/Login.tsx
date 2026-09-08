@@ -7,6 +7,7 @@ import {
   IconEye,
   IconEyeOff,
   Input,
+  PrefeituraLogo,
   cn,
 } from '@zeladoria/ui';
 import { useRef, useState } from 'react';
@@ -88,7 +89,10 @@ export default function Login() {
 
   return (
     <div className="flex flex-1 flex-col justify-center px-7 py-10">
-      <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-accent">gov.br</p>
+      {/* O brasão antes do nome do produto: quem abre esta tela precisa saber de
+          qual prefeitura é o serviço antes de digitar e-mail e senha nele. */}
+      <PrefeituraLogo size={84} />
+      <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.3em] text-accent">gov.br</p>
       <h1 className="mt-2 font-display text-3xl font-extrabold text-content">
         Zeladoria<span className="text-success-onSoft">.gov</span>
       </h1>

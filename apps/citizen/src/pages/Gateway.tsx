@@ -1,4 +1,4 @@
-import { IconChevronRight, SkipLink, ThemeToggle } from '@zeladoria/ui';
+import { IconChevronRight, PrefeituraLogo, SkipLink, ThemeToggle } from '@zeladoria/ui';
 import { m } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
@@ -27,7 +27,9 @@ export default function Gateway() {
           <ThemeToggle onChrome />
         </div>
 
-        <p className="font-mono text-xs uppercase tracking-[0.3em] text-gov-yellow-400">gov.br</p>
+        <PrefeituraLogo size={96} />
+
+        <p className="mt-6 font-mono text-xs uppercase tracking-[0.3em] text-gov-yellow-400">gov.br</p>
         <h1 className="mt-3 font-display text-4xl font-extrabold leading-tight">
           Zeladoria<span className="text-gov-yellow-400">.gov</span>
         </h1>

@@ -49,6 +49,8 @@ export { ThemeToggle } from './primitives/ThemeToggle';
 /* ---- domínio --------------------------------------------------------- */
 export { StatusBadge } from './domain/StatusBadge';
 export type { StatusBadgeProps } from './domain/StatusBadge';
+export { PrefeituraLogo } from './domain/PrefeituraLogo';
+export type { PrefeituraLogoProps } from './domain/PrefeituraLogo';
 export { STATUS_ICON } from './domain/statusIcons';
 export {
   STATUS_HEX,

@@ -31,6 +31,21 @@ hex cru, e cada par tem o contraste anotado.
 (accent/success/warn/danger) sobem para rungs claras no escuro, e por isso cada
 um tem o seu `--text-on-*`: `text-white` em cima deles cairia para ~3:1.
 
+**O brasão da prefeitura vem numa placa clara** (`PrefeituraLogo`). O arquivo
+tem fundo transparente, mas a ponte e o texto do logo são pretos: soltos, somem
+sobre o azul institucional da capa e do painel, e sobre a superfície do app do
+cidadão em tema escuro. A placa, e não uma versão recolorida, porque brasão de
+município é identidade oficial — reproduzir com as cores trocadas é alterar a
+marca. Em superfície clara a placa branca praticamente desaparece, então o mesmo
+componente serve aos dois temas sem ramificar por `useTheme`. Respiro e raio são
+proporcionais ao tamanho: com valores fixos, a placa de 52px da sidebar sobrava
+imagem de menos e a logo virava um borrão.
+
+O PNG mora no `public/` de cada app, não em `packages/ui`. São dois arquivos de
+5 KB em vez de um, e é o preço de não ensinar os dois `vite.config.ts` e os dois
+`tsconfig.json` a importar binário — o que exigiria declaração de módulo para
+`*.png` aqui e entraria em conflito com a que os apps herdam de `vite/client`.
+
 **Movimento.** Durações e curvas em `src/lib/motion.ts`. Vale uma regra de
 robustez: conteúdo não pode depender de animação para existir. O framer anima em
 `requestAnimationFrame`, que o navegador suspende em aba oculta — enquanto isso
