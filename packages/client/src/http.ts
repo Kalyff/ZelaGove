@@ -23,6 +23,9 @@ export interface ApiClient {
   /** Requisição autenticada crua. É sobre ela que cada app monta suas rotas. */
   request<T = unknown>(path: string, init?: RequestInit): Promise<T>;
   login(email: string, password: string): Promise<ApiUser>;
+  /** Cria a conta e JÁ deixa a sessão aberta — o servidor devolve o mesmo par
+   *  de tokens do login. */
+  register(name: string, email: string, password: string): Promise<ApiUser>;
   refresh(): Promise<ApiUser>;
   logout(): Promise<void>;
 }
@@ -87,6 +90,21 @@ export function createApiClient(baseUrl: string): ApiClient {
     return data.user;
   }
 
+  /**
+   * Só o app do cidadão tem tela para isto, mas o método é do cliente e não da
+   * tela: quem guarda o access token é este fechamento, e devolver o token para
+   * a página gravá-lo por fora seria justamente o que a decisão de manter o
+   * token fora do `localStorage` existe para evitar.
+   */
+  async function register(name: string, email: string, password: string): Promise<ApiUser> {
+    const data = await request<{ accessToken: string; user: ApiUser }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password }),
+    });
+    accessToken = data.accessToken;
+    return data.user;
+  }
+
   async function refresh(): Promise<ApiUser> {
     const data = await request<{ accessToken: string; user: ApiUser }>(
       '/auth/refresh',
@@ -104,5 +122,5 @@ export function createApiClient(baseUrl: string): ApiClient {
     accessToken = null;
   }
 
-  return { request, login, refresh, logout };
+  return { request, login, register, refresh, logout };
 }

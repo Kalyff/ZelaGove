@@ -38,6 +38,22 @@ export const Errors = {
   // "encaminhado" para lugar nenhum.
   useForwardEndpoint: () =>
     new AppError(422, 'USE_FORWARD_ENDPOINT', 'Use o encaminhamento para enviar a outro órgão.', 'status'),
+  /**
+   * Cadastro com e-mail que já existe.
+   *
+   * Isto REVELA que a conta existe — e contradiz de frente a escolha do
+   * `/login`, que devolve a mesma mensagem para e-mail inexistente e senha
+   * errada justamente para não entregar essa informação.
+   *
+   * A contradição é assumida porque não há saída boa sem confirmação por
+   * e-mail, que este projeto não tem como enviar. A alternativa seria uma
+   * mensagem genérica, e aí a pessoa fica sem saber por que o cadastro falhou
+   * num formulário que ela acabou de preencher corretamente. Entre vazar que um
+   * endereço já se cadastrou e deixar o cidadão travado na porta, o cadastro é
+   * o lugar onde vale escolher o segundo.
+   */
+  emailAlreadyRegistered: () =>
+    new AppError(422, 'EMAIL_ALREADY_REGISTERED', 'Este e-mail já tem cadastro. Entre com ele.', 'email'),
   notForwarded: () =>
     new AppError(422, 'NOT_FORWARDED', 'Só é possível anotar protocolo externo em chamado encaminhado.', 'externalProtocol'),
 };

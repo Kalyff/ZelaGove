@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createTicketSchema,
+  registerSchema,
   forwardTicketSchema,
   listTicketsQuerySchema,
   updateTicketStatusSchema,
@@ -145,5 +146,51 @@ describe('createTicketSchema', () => {
 
   it('recusa título vazio', () => {
     expect(createTicketSchema.safeParse({ ...valid, title: '  ' }).success).toBe(false);
+  });
+});
+
+/**
+ * O cadastro é o único caminho pelo qual uma conta nasce a pedido de um
+ * desconhecido. O que este schema deixa passar vira usuário no banco.
+ */
+describe('registerSchema', () => {
+  const valido = { name: 'Ana Beatriz', email: 'ana@email.com', password: 'senha-de-verdade' };
+
+  it('aceita um cadastro completo', () => {
+    expect(registerSchema.safeParse(valido).success).toBe(true);
+  });
+
+  /* É o `.trim().toLowerCase()` que faz o e-mail colidir com o já cadastrado na
+     constraint de unicidade, em vez de abrir uma segunda conta para a mesma
+     pessoa. */
+  it('normaliza o e-mail para caixa baixa e sem espaços', () => {
+    const parsed = registerSchema.parse({ ...valido, email: '  ANA@Email.com  ' });
+    expect(parsed.email).toBe('ana@email.com');
+  });
+
+  it('recusa senha com menos de 8 caracteres, apontando o campo', () => {
+    const res = registerSchema.safeParse({ ...valido, password: 'curta' });
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error.issues[0].path).toEqual(['password']);
+  });
+
+  /* Teto contra negação de serviço: cada tentativa custa um `scrypt`, que é
+     caro de propósito. */
+  it('recusa senha absurdamente longa', () => {
+    expect(registerSchema.safeParse({ ...valido, password: 'a'.repeat(5000) }).success).toBe(false);
+  });
+
+  it('recusa e-mail inválido', () => {
+    expect(registerSchema.safeParse({ ...valido, email: 'nao-e-email' }).success).toBe(false);
+  });
+
+  /**
+   * O PAPEL NÃO É ESCOLHIDO PELO CLIENTE. O schema nem declara `role`, então o
+   * zod descarta a chave — se ela um dia sobreviver ao parse e chegar ao
+   * `prisma.user.create`, qualquer pessoa vira gestor pelo formulário público.
+   */
+  it('descarta `role` vindo do corpo', () => {
+    const parsed = registerSchema.parse({ ...valido, role: 'admin' });
+    expect(parsed).not.toHaveProperty('role');
   });
 });

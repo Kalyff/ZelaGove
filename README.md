@@ -84,8 +84,10 @@ npm run dev --workspace @zeladoria/admin
 
 O seed também cadastra os órgãos externos usados no encaminhamento.
 
-Fora do desenvolvimento não existe seed, e portanto não existe nenhum usuário.
-Para criar a primeira conta de gestor:
+Fora do desenvolvimento não existe seed. O cidadão se cadastra sozinho, pela
+própria tela de login do app. Já o gestor é provisionado — `/auth/register` cria
+exclusivamente `citizen`, e o papel é escrito no servidor, nunca lido do corpo
+da requisição. Para criar a primeira conta de gestor:
 
 ```bash
 npm run create-admin --workspace @zeladoria/api -- \

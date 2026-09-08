@@ -12,6 +12,7 @@ a mensagem NO campo errado em vez de um aviso genérico.
 
 | Método | Rota | Perfil |
 |---|---|---|
+| POST | `/auth/register` | público (10 cadastros / hora por IP) |
 | POST | `/auth/login` | público (10 tentativas / 15 min) |
 | POST | `/auth/refresh` | cookie `zg_refresh` |
 | POST | `/auth/logout` | — |
@@ -19,6 +20,17 @@ a mensagem NO campo errado em vez de um aviso genérico.
 
 Endpoint de login único para os dois apps: as TELAS é que são separadas
 (requisito 2.3). O papel volta no payload e cada front recusa a sessão do outro.
+
+`/register` cria **sempre** `citizen` — o papel é escrito no servidor, nunca
+lido do corpo — e devolve a mesma sessão do login (201, `accessToken` mais o
+cookie de refresh), para o cadastro já entrar sem uma segunda volta pela tela de
+login. Gestor não se cadastra: é provisionado pelo `create-admin`.
+
+Ele é o único ponto do sistema que revela se um e-mail já existe
+(`EMAIL_ALREADY_REGISTERED`), ao contrário do `/login`, que devolve a mesma
+mensagem para e-mail inexistente e senha errada. A contradição é assumida — sem
+confirmação por e-mail não há saída boa, e uma mensagem genérica deixaria a
+pessoa sem saber por que o cadastro falhou.
 
 ## Cidadão
 

@@ -3,9 +3,11 @@
 O que ainda não está resolvido e o que cada item exige para evoluir.
 Voltar para o [README](../README.md).
 
-- **Não há cadastro de cidadão pela interface.** Contas só nascem pelo `seed.ts`
-  em desenvolvimento ou pelo `create-admin`, que cria gestor. Um cidadão não
-  consegue se registrar sozinho — falta a tela e falta a rota.
+- **A conta de cidadão nasce sem verificação de e-mail.** O cadastro é imediato
+  e ninguém confirma que o endereço é de quem se inscreveu — dá para se
+  registrar com o e-mail de outra pessoa. Resolver exige serviço de envio, que o
+  projeto não tem. Enquanto isso, o e-mail serve para entrar, não como prova de
+  identidade.
 - **Não há troca nem recuperação de senha.** A senha definida no cadastro é
   definitiva até alguém mexer no banco. O `create-admin` recusa e-mail existente
   de propósito, então nem ele serve de escape.

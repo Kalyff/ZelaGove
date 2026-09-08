@@ -8,7 +8,7 @@ Voltar para o [README](../README.md).
 | Rota | Tela |
 |---|---|
 | `/` | Gateway público (requisito 2.3) |
-| `/entrar` | Login do cidadão |
+| `/entrar` | Login e cadastro do cidadão (a mesma tela alterna entre os dois) |
 | `/chamados` | Meus chamados |
 | `/chamados/na-cidade` | Chamados de toda a cidade, em projeção reduzida |
 | `/chamados/novo` | Abertura de serviço |
@@ -25,6 +25,15 @@ Voltar para o [README](../README.md).
 - **Abrir chamado termina numa confirmação com o número de protocolo**
   (`components/TicketCreated.tsx`), com botão de copiar. O protocolo é o que o
   cidadão usa para cobrar depois.
+- **Entrar e criar conta moram na MESMA tela**, num alternador. Cadastro é a
+  primeira coisa que um cidadão faz e a única vez que faz — mandá-lo para outra
+  rota, e de volta, é atrito num momento em que ele ainda não tem motivo nenhum
+  para insistir. O cadastro já devolve a sessão aberta: pedir o login logo depois
+  seria pedir a senha que a pessoa acabou de escolher.
+- **O alternador são botões com `aria-pressed`, não abas.** `role="tablist"`
+  promete navegação por setas, que não foi implementada — prometer menos e
+  cumprir é melhor que anunciar um padrão pela metade. Trocar de modo limpa os
+  erros e leva o foco ao primeiro campo do formulário novo.
 - **Erro de campo vem do servidor.** O `ApiError.field` do 422 é lido e a
   mensagem aparece no campo, com o foco levado até ele.
 - **Token de acesso vive só em memória**, nunca em `localStorage`. O refresh

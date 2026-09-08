@@ -15,6 +15,19 @@ import { citizenTicketRoutes } from './modules/tickets/citizen.routes';
 export function createApp() {
   const app = express();
 
+  /**
+   * Um salto de proxy — o Caddy do `docker-compose.prod.yml`.
+   *
+   * Sem isto, `req.ip` é o IP do proxy para TODO mundo em produção, e os
+   * limitadores de taxa deixam de separar quem é quem: dez tentativas erradas de
+   * uma pessoa passam a trancar o login da cidade inteira por quinze minutos.
+   * Um limite pensado contra força bruta vira negação de serviço.
+   *
+   * `1`, e não `true`: `true` confiaria em qualquer `X-Forwarded-For` que
+   * chegasse, e aí forjar o cabeçalho seria o bastante para escapar do limite.
+   */
+  app.set('trust proxy', 1);
+
   app.use(helmet());
   app.use(cors({ origin: corsOrigins, credentials: true }));
   app.use(express.json());

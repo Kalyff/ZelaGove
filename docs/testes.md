@@ -21,6 +21,7 @@ derruba a aplicação, só entrega dado de um cidadão para outro.
 
 | Arquivo | Cobertura |
 |---|---|
+| `apps/api/test/integration/registration.test.ts` | Cadastro de cidadão — inclusive que `role` no corpo é ignorado |
 | `apps/api/test/integration/forwarding.test.ts` | Encaminhamento de chamados |
 | `apps/api/test/integration/public-feed.test.ts` | Feed público de chamados |
 | `packages/shared/test/distance.test.ts` | Cálculo de distância |

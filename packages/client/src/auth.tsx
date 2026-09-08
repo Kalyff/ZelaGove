@@ -6,6 +6,12 @@ export interface AuthState {
   user: ApiUser | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  /**
+   * Cria a conta e entra. Só o app do cidadão tem tela para isto — o servidor
+   * cria exclusivamente `citizen`, então uma chamada a partir do painel cairia
+   * no mesmo guard de papel abaixo e seria recusada.
+   */
+  signUp: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -47,19 +53,34 @@ export function AuthProvider({
       .finally(() => setLoading(false));
   }, [client, role]);
 
+  /**
+   * Porta única de entrada da sessão.
+   *
+   * Todo caminho que autentica passa por aqui, e é esse o motivo de o guard de
+   * papel morar no provedor e não na tela: com a checagem copiada em cada
+   * formulário, basta um caminho novo esquecer dela para uma sessão de gestor
+   * ficar de pé dentro do app do cidadão, parecendo válida até a primeira
+   * requisição voltar 403.
+   */
+  async function aceitarSessao(u: ApiUser) {
+    if (u.role !== role) {
+      // Sessão do app errado não fica pendurada: o cookie de refresh sai junto,
+      // senão o próximo carregamento a restauraria em silêncio.
+      await client.logout();
+      throw new ApiError('WRONG_APP', wrongAppMessage);
+    }
+    setUser(u);
+  }
+
   const value = useMemo<AuthState>(
     () => ({
       user,
       loading,
       async signIn(email, password) {
-        const u = await client.login(email, password);
-        if (u.role !== role) {
-          // Sessão do app errado não fica pendurada: o cookie de refresh sai
-          // junto, senão o próximo carregamento a restauraria em silêncio.
-          await client.logout();
-          throw new ApiError('WRONG_APP', wrongAppMessage);
-        }
-        setUser(u);
+        await aceitarSessao(await client.login(email, password));
+      },
+      async signUp(name, email, password) {
+        await aceitarSessao(await client.register(name, email, password));
       },
       async signOut() {
         await client.logout();

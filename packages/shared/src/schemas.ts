@@ -99,3 +99,37 @@ export const listTicketsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(1).max(100).default(50),
 });
+
+/**
+ * Cadastro de cidadão pela própria interface (a única forma de uma conta nascer
+ * fora do seed de desenvolvimento e do `create-admin`).
+ *
+ * `role` NÃO existe aqui de propósito, e é a razão de este schema ser separado
+ * do resto: quem escolhe o papel é o servidor, na rota. O zod já descarta chave
+ * desconhecida, então um `{"role":"admin"}` no corpo morre aqui — mas a rota
+ * também fixa o valor, porque uma garantia dessas não deve depender de um único
+ * ponto lembrar dela.
+ */
+export const registerSchema = z.object({
+  name: z.string().trim().min(3, 'Informe seu nome.').max(120),
+  // Mesmo tratamento do `loginSchema`: é o `.trim().toLowerCase()` que faz
+  // "JOAO@x.com" colidir com "joao@x.com" na constraint de unicidade, em vez de
+  // criar duas contas para a mesma pessoa.
+  email: z.string().trim().toLowerCase().email('E-mail inválido.'),
+  /**
+   * Piso de 8, contra os 12 que o `create-admin` exige. A assimetria é
+   * proposital: a conta de gestor enxerga o dado de TODOS os cidadãos e é
+   * criada por um operador a quem se pode exigir uma senha longa; esta enxerga
+   * só os próprios chamados e é digitada num celular, quase sempre sem
+   * gerenciador de senha.
+   *
+   * O teto não é estética: `scrypt` sobre entrada arbitrariamente grande é
+   * vetor de negação de serviço — cada tentativa custaria memória e CPU do
+   * servidor.
+   */
+  password: z
+    .string()
+    .min(8, 'A senha precisa de pelo menos 8 caracteres.')
+    .max(200, 'Senha longa demais.'),
+});
+export type RegisterInput = z.infer<typeof registerSchema>;
