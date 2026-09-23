@@ -9,6 +9,16 @@ import type { QueryClient } from '@tanstack/react-query';
  * detalhes aberto deixava o modal mostrando o estado anterior. Um mapa
  * ortográfico não resolve isso; `invalidateTicketViews` resolve.
  */
+/**
+ * De quanto em quanto tempo as telas "ao vivo" do painel (visão geral, mapa e
+ * quadro) buscam de novo, para um chamado aberto pelo cidadão aparecer sem F5.
+ *
+ * Busca periódica, não push: sem SSE/WebSocket a API não muda. O react-query já
+ * pausa o intervalo com a aba em segundo plano (`refetchIntervalInBackground`
+ * é falso por padrão), então um painel esquecido aberto não fica consultando.
+ */
+export const LIVE_REFRESH_MS = 15_000;
+
 export const queryKeys = {
   /** Quadro de ordens: só os três status operacionais. */
   boardTickets: ['admin-tickets'] as const,

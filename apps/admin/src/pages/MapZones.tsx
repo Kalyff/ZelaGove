@@ -2,12 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { ErrorState, Skeleton } from '@zeladoria/ui';
 import { TicketsMap } from '../components/TicketsMap';
 import { listMapPoints } from '../lib/api';
-import { queryKeys } from '../lib/queryKeys';
+import { LIVE_REFRESH_MS, queryKeys } from '../lib/queryKeys';
 
 export default function MapZones() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: queryKeys.mapPoints,
     queryFn: listMapPoints,
+    refetchInterval: LIVE_REFRESH_MS,
   });
 
   if (isError) {

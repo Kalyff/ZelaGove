@@ -22,7 +22,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { StatusDistribution } from '../components/StatusDistribution';
 import { getMetrics } from '../lib/api';
-import { queryKeys } from '../lib/queryKeys';
+import { LIVE_REFRESH_MS, queryKeys } from '../lib/queryKeys';
 
 type Tone = 'plain' | 'amber' | 'blue' | 'green';
 
@@ -117,6 +117,7 @@ export default function Overview() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: queryKeys.metrics,
     queryFn: getMetrics,
+    refetchInterval: LIVE_REFRESH_MS,
   });
 
   if (isError) {
