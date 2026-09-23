@@ -72,6 +72,11 @@ Voltar para o [README](../README.md).
 - **A sidebar vira gaveta abaixo de `lg`** e as três colunas viram um carrossel
   horizontal com encaixe. Antes o painel era `w-64` sem nenhum breakpoint dentro
   de um `overflow-hidden`: em 375px a navegação comia dois terços da tela.
+- **Visão geral, mapa e quadro se atualizam sozinhos a cada 15 s**
+  (`LIVE_REFRESH_MS` em `apps/admin/src/lib/queryKeys.ts`), só com a aba
+  visível. É busca periódica, não push: um chamado novo leva até 15 s para
+  aparecer. O quadro pausa a busca durante o arrasto e enquanto uma mudança de
+  status está pendente, para não desfazer o update otimista.
 - **Kanban com atualização otimista.** O card muda de coluna na hora e volta
   sozinho se o servidor recusar, com aviso. O único lugar onde o rótulo de status
   é escrito no cliente é esse quadro otimista — está comentado no código, e o

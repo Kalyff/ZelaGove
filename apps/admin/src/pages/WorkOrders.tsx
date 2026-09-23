@@ -9,7 +9,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIsMutating, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BOARD_STATUSES,
   STATUS_LABELS_ADMIN,
@@ -27,7 +27,7 @@ import { KanbanColumn } from '../components/KanbanColumn';
 import { TicketModal } from '../components/TicketModal';
 import { forwardTicket, listTickets, updateStatus } from '../lib/api';
 import { kanbanCoordinateGetter } from '../lib/kanbanKeyboard';
-import { invalidateTicketViews, queryKeys } from '../lib/queryKeys';
+import { LIVE_REFRESH_MS, invalidateTicketViews, queryKeys } from '../lib/queryKeys';
 import { useMutationError } from '../lib/useMutationError';
 
 export default function WorkOrders() {
@@ -40,6 +40,7 @@ export default function WorkOrders() {
   const [completing, setCompleting] = useState<TicketDTO | null>(null);
   const [forwarding, setForwarding] = useState<TicketDTO | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const mutating = useIsMutating();
 
   /* A visão geral abre uma ordem por `?ticket=<id>`. */
   const openTicketId = searchParams.get('ticket');
@@ -61,6 +62,10 @@ export default function WorkOrders() {
        teto de 100 linhas sem aparecer em lugar nenhum do quadro — e empurrariam
        chamados PENDENTES para fora da resposta. */
     queryFn: () => listTickets({ status: [...BOARD_STATUSES] }),
+    /* Pausa durante o arrasto e enquanto uma mudança de status está no ar: uma
+       resposta periódica chegando nesse meio devolveria o card à coluna antiga
+       por cima do update otimista, e ele "pularia" de volta até o onSettled. */
+    refetchInterval: activeId || mutating > 0 ? false : LIVE_REFRESH_MS,
   });
   const tickets = useMemo(() => data?.data ?? [], [data]);
 
