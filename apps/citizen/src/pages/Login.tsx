@@ -18,7 +18,7 @@ type Modo = 'entrar' | 'cadastrar';
 const TEXTOS = {
   entrar: {
     descricao: 'Entre para abrir e acompanhar seus chamados.',
-    acao: 'Entrar com gov.br',
+    acao: 'Entrar',
     falha: 'Não foi possível entrar',
   },
   cadastrar: {
