@@ -1,6 +1,6 @@
-import { AnimatePresence, m } from 'framer-motion';
+import { m } from 'framer-motion';
 import { DUR, EASE, SkipLink } from '@zeladoria/ui';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigationType } from 'react-router-dom';
 import { BottomNav } from '../components/BottomNav';
 import { GovStripe, PhoneFrame } from '../components/PhoneFrame';
@@ -34,11 +34,22 @@ export function PhoneLayout({ withNav = false }: { withNav?: boolean }) {
   const mainRef = useRef<HTMLElement>(null);
   const previousDepth = useRef(depthOf(location.pathname));
 
+  /* A primeira página aparece parada: nada chegou "de algum lugar", e com o
+     `LazyMotion` ainda carregando ela ficaria deslocada até as features
+     chegarem. */
+  const firstPaint = useRef(true);
+
   const depth = depthOf(location.pathname);
   /* POP é o botão voltar do navegador — sempre trata como retorno, mesmo
      quando a profundidade não muda (troca entre irmãos). */
   const back = navType === 'POP' || depth < previousDepth.current;
-  previousDepth.current = depth;
+
+  /* Atualizado em efeito, não no render: o `StrictMode` renderiza duas vezes,
+     e a segunda já via a profundidade nova — o "Voltar" deslizava como avanço. */
+  useEffect(() => {
+    previousDepth.current = depth;
+    firstPaint.current = false;
+  }, [depth]);
 
   useRouteFocus(mainRef, location.pathname);
 
@@ -55,20 +66,28 @@ export function PhoneLayout({ withNav = false }: { withNav?: boolean }) {
         tabIndex={-1}
         className="flex min-h-0 flex-1 flex-col focus:outline-none"
       >
-        <AnimatePresence mode="wait" initial={false}>
-          <m.div
-            key={location.pathname}
-            /* Só `x` — a opacidade fica em 1. Se o rAF não rodar (aba oculta,
-               JS lento em 3G), o conteúdo aparece deslocado, não invisível.
-               Ver a regra de robustez em packages/ui/src/lib/motion.ts. */
-            initial={{ x: back ? -24 : 24 }}
-            animate={{ x: 0, transition: { duration: DUR.page, ease: EASE.out } }}
-            exit={{ x: back ? 16 : -16, transition: { duration: DUR.fast, ease: EASE.in } }}
-            className="flex min-h-0 flex-1 flex-col"
-          >
-            <Outlet />
-          </m.div>
-        </AnimatePresence>
+        {/*
+          Só ENTRADA, sem AnimatePresence — o mesmo padrão do Shell do painel.
+
+          A versão anterior tinha `AnimatePresence mode="wait"` com saída. O nó
+          que saía continuava com o `<Outlet />`, e o Outlet lê o contexto de
+          rota: já renderizava a página NOVA. Cada clique mostrava a página nova,
+          fazia ela sumir deslizando, e só então a montava de novo entrando —
+          duas montagens, lista escalonada duas vezes, ~400ms de espera com
+          cara de travamento.
+
+          Só `x`, opacidade em 1: se o rAF não rodar, o conteúdo aparece
+          deslocado, não invisível (regra em packages/ui/src/lib/motion.ts).
+        */}
+        <m.div
+          key={location.pathname}
+          initial={firstPaint.current ? false : { x: back ? -24 : 24 }}
+          animate={{ x: 0 }}
+          transition={{ duration: DUR.page, ease: EASE.out }}
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          <Outlet />
+        </m.div>
       </main>
 
       {withNav && <BottomNav />}

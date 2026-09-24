@@ -23,7 +23,7 @@ export default function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { announce } = useAnnouncer();
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetchedAfterMount, refetch } = useQuery({
     queryKey: ['my-tickets'],
     queryFn: listMyTickets,
   });
@@ -117,8 +117,10 @@ export default function Home() {
               <m.li
                 key={ticket.id}
                 /* Só `y` — a opacidade fica em 1, para o chamado do cidadão não
-                   depender do rAF para existir. Ver a regra em motion.ts. */
-                initial={{ y: 10 }}
+                   depender do rAF para existir. Ver a regra em motion.ts.
+                   Só anima o que acabou de chegar: vindo do cache, a lista já
+                   estava pronta e reescalonar a cada troca de aba é só espera. */
+                initial={isFetchedAfterMount ? { y: 10 } : false}
                 animate={{ y: 0 }}
                 transition={{ delay: Math.min(i, 8) * 0.04, duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               >

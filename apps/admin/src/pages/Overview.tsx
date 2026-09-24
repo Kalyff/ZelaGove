@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import {
   Card,
+  DUR,
+  EASE,
   ErrorState,
   EmptyState,
   IconAlert,
@@ -52,9 +54,16 @@ const TONE: Record<Tone, { rule: string; chip: string; value: string }> = {
   },
 };
 
+/**
+ * Número que anima quando MUDA — não quando aparece.
+ *
+ * Partia de 0 a cada visita e levava 700ms para chegar ao total: quem voltava
+ * à visão geral via o painel "recontando" como se ainda estivesse carregando.
+ * Agora nasce no valor, e só um refetch com número novo produz movimento.
+ */
 function CountUp({ value }: { value: number }) {
   const reduced = useReducedMotionSafe();
-  const mv = useMotionValue(0);
+  const mv = useMotionValue(value);
   const text = useTransform(mv, (v) => Math.round(v).toLocaleString('pt-BR'));
 
   useEffect(() => {
@@ -64,7 +73,7 @@ function CountUp({ value }: { value: number }) {
       mv.set(value);
       return;
     }
-    const controls = animate(mv, value, { duration: 0.7, ease: [0.16, 1, 0.3, 1] });
+    const controls = animate(mv, value, { duration: DUR.slow, ease: EASE.out });
     return () => controls.stop();
   }, [value, reduced, mv]);
 

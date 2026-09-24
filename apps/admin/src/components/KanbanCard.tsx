@@ -16,12 +16,15 @@ export function KanbanCard({
   onForward,
   /** Renderizado dentro do DragOverlay: card "levantado" que segue o cursor. */
   isOverlay = false,
+  /** Acabou de ser solto numa coluna nova: o card levantado já fez o trajeto. */
+  skipFlight = false,
 }: {
   ticket: TicketDTO;
   onOpen?: () => void;
   onStatusChange?: (status: TicketStatus) => void;
   onForward?: () => void;
   isOverlay?: boolean;
+  skipFlight?: boolean;
 }) {
   const { theme } = useTheme();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -36,9 +39,11 @@ export function KanbanCard({
       ref={isOverlay ? undefined : setNodeRef}
       /* `layout` + `layoutId` fazem o card VOAR para a nova coluna quando o
          cache otimista o move, em vez de sumir de um lado e nascer no outro.
-         Exige o feature set `domMax`, que este app carrega. */
+         Exige o feature set `domMax`, que este app carrega.
+         Menos quando ele foi SOLTO lá: o card levantado já pousou no lugar, e
+         voar de novo a partir da origem parecia o arrasto rebobinando. */
       layout={!isOverlay}
-      layoutId={isOverlay ? undefined : ticket.id}
+      layoutId={isOverlay || skipFlight ? undefined : ticket.id}
       className={cn(
         'card group relative p-3.5',
         /* O card de origem some por completo e um placeholder tracejado guarda

@@ -30,6 +30,18 @@ import { kanbanCoordinateGetter } from '../lib/kanbanKeyboard';
 import { invalidateTicketViews, queryKeys } from '../lib/queryKeys';
 import { useMutationError } from '../lib/useMutationError';
 
+/**
+ * O chamado como ficará depois da troca de status, antes de o servidor responder.
+ *
+ * ÚNICA exceção à regra "o rótulo vem do servidor": este é o mesmo mapa que o
+ * servidor aplica para o público admin (packages/shared/src/labels.ts), vive
+ * menos de 300ms e o refetch o sobrescreve com o valor real. Não "corrigir"
+ * isto para ler do servidor — aqui ainda não há resposta.
+ */
+function withStatus(ticket: TicketDTO, status: TicketStatus): TicketDTO {
+  return { ...ticket, status, statusLabel: STATUS_LABELS_ADMIN[status] };
+}
+
 export default function WorkOrders() {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -40,6 +52,17 @@ export default function WorkOrders() {
   const [completing, setCompleting] = useState<TicketDTO | null>(null);
   const [forwarding, setForwarding] = useState<TicketDTO | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  /**
+   * Card SOLTO numa coluna nova que o cache ainda não moveu.
+   *
+   * O dnd-kit mede para onde o card levantado deve pousar no mesmo commit em
+   * que o arrasto termina. O update otimista do cache chega depois (passa por
+   * `await cancelQueries` e pelo agendador do TanStack). Sem isto, o card
+   * levantado voltava para a coluna de ORIGEM enquanto o card real voava da
+   * origem para o destino — dois cards cruzando, com cara de bug. Como estado
+   * React no mesmo handler, o card já está no destino quando a medida acontece.
+   */
+  const [dropped, setDropped] = useState<{ id: string; status: TicketStatus } | null>(null);
 
   /* A visão geral abre uma ordem por `?ticket=<id>`. */
   const openTicketId = searchParams.get('ticket');
@@ -62,7 +85,12 @@ export default function WorkOrders() {
        chamados PENDENTES para fora da resposta. */
     queryFn: () => listTickets({ status: [...BOARD_STATUSES] }),
   });
-  const tickets = useMemo(() => data?.data ?? [], [data]);
+  const tickets = useMemo(() => {
+    const list = data?.data ?? [];
+    return dropped
+      ? list.map((t) => (t.id === dropped.id ? withStatus(t, dropped.status) : t))
+      : list;
+  }, [data, dropped]);
 
   const mutation = useMutation({
     mutationFn: updateStatus,
@@ -81,21 +109,7 @@ export default function WorkOrders() {
         old
           ? {
               ...old,
-              data: old.data.map((t) =>
-                t.id === vars.id
-                  ? {
-                      ...t,
-                      status: vars.status,
-                      /* ÚNICA exceção à regra "o rótulo vem do servidor": este
-                         é o mesmo mapa que o servidor aplica para o público
-                         admin (packages/shared/src/labels.ts), vive menos de
-                         300ms e o onSettled o sobrescreve com o valor real.
-                         Não "corrigir" isto para ler do servidor — aqui ainda
-                         não há resposta. */
-                      statusLabel: STATUS_LABELS_ADMIN[vars.status],
-                    }
-                  : t,
-              ),
+              data: old.data.map((t) => (t.id === vars.id ? withStatus(t, vars.status) : t)),
             }
           : old,
       );
@@ -111,7 +125,13 @@ export default function WorkOrders() {
       mutationError.clear();
       announce(`Ordem movida para ${STATUS_LABELS_ADMIN[vars.status]}.`);
     },
-    onSettled: () => invalidateTicketViews(queryClient),
+    onSettled: (_data, _error, vars) => {
+      /* Aqui o cache já tem o valor otimista (ou o rollback do onError): tirar
+         o override não move nada. Só limpa se for o MESMO movimento — a
+         resposta de um arrasto anterior não pode desfazer o atual. */
+      setDropped((d) => (d?.id === vars.id && d.status === vars.status ? null : d));
+      return invalidateTicketViews(queryClient);
+    },
   });
 
   /**
@@ -186,6 +206,11 @@ export default function WorkOrders() {
     const status = event.over?.id as TicketStatus | undefined;
     const ticket = tickets.find((t) => t.id === event.active.id);
     if (!status || !ticket) return;
+    /* Concluir abre o modal e o card fica onde estava até a confirmação —
+       ali o card levantado voltar à origem é o certo. */
+    if (status !== ticket.status && status !== 'done') {
+      setDropped({ id: ticket.id, status });
+    }
     requestStatusChange(ticket, status);
   }
 
@@ -270,6 +295,7 @@ export default function WorkOrders() {
                     <KanbanCard
                       key={ticket.id}
                       ticket={ticket}
+                      skipFlight={ticket.id === dropped?.id}
                       onOpen={() => setOpenTicketId(ticket.id)}
                       onStatusChange={(s) => requestStatusChange(ticket, s)}
                       onForward={() => {

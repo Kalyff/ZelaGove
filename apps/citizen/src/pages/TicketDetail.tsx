@@ -46,6 +46,7 @@ export default function TicketDetail({ source }: { source: keyof typeof SOURCES 
     data: ticket,
     isLoading,
     isError,
+    isFetchedAfterMount,
     refetch,
   } = useQuery({ queryKey: [queryKey, id], queryFn: () => load(id) });
 
@@ -184,7 +185,7 @@ export default function TicketDetail({ source }: { source: keyof typeof SOURCES 
                   Atualizações
                 </h3>
                 <div className="mt-4">
-                  <Timeline events={ticket.timeline} />
+                  <Timeline events={ticket.timeline} animateEntry={isFetchedAfterMount} />
                 </div>
               </section>
             </div>

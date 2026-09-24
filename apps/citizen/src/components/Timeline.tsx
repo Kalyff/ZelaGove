@@ -8,8 +8,17 @@ import { m } from 'framer-motion';
 /**
  * Requisito 4.2 e 3.1.5: o histórico completo, inclusive notas e fotos escritas
  * pelo gestor. Ordem cronológica inversa — o servidor já entrega assim.
+ *
+ * `animateEntry` desliga a entrada quando o histórico veio pronto do cache:
+ * reabrir o mesmo chamado não deve refazer o desenho do fio e dos eventos.
  */
-export function Timeline({ events }: { events: TimelineEventDTO[] }) {
+export function Timeline({
+  events,
+  animateEntry = true,
+}: {
+  events: TimelineEventDTO[];
+  animateEntry?: boolean;
+}) {
   return (
     <ol className="relative space-y-6">
       {/* Fio vertical: some ao chegar no evento de abertura, sinalizando o
@@ -17,7 +26,7 @@ export function Timeline({ events }: { events: TimelineEventDTO[] }) {
           sem reflow), nunca em `height`. */}
       <m.span
         aria-hidden
-        initial={{ scaleY: 0 }}
+        initial={animateEntry ? { scaleY: 0 } : false}
         animate={{ scaleY: 1 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         style={{ transformOrigin: 'top' }}
@@ -31,7 +40,7 @@ export function Timeline({ events }: { events: TimelineEventDTO[] }) {
             className="relative flex gap-4"
             /* Só `y` — o histórico do chamado não pode depender do rAF para
                ser legível. Ver a regra em packages/ui/src/lib/motion.ts. */
-            initial={{ y: 8 }}
+            initial={animateEntry ? { y: 8 } : false}
             animate={{ y: 0 }}
             transition={{ delay: Math.min(i, 6) * 0.05, duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
           >

@@ -38,7 +38,7 @@ export default function NearbyTickets() {
   const { announce } = useAnnouncer();
   const { position, loading: locating, error: locationError, capture } = useGeolocation();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetchedAfterMount, refetch } = useQuery({
     queryKey: ['public-tickets'],
     queryFn: listPublicTickets,
   });
@@ -147,8 +147,9 @@ export default function NearbyTickets() {
                   <m.li
                     key={ticket.id}
                     /* Só `y`: a lista não pode depender do rAF para existir.
-                       Ver a regra em packages/ui/src/lib/motion.ts. */
-                    initial={{ y: 10 }}
+                       Ver a regra em packages/ui/src/lib/motion.ts. Vinda do
+                       cache, a lista aparece pronta — ver Home.tsx. */
+                    initial={isFetchedAfterMount ? { y: 10 } : false}
                     animate={{ y: 0 }}
                     transition={{
                       delay: Math.min(i, 8) * 0.04,
