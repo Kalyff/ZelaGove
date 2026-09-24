@@ -71,12 +71,14 @@ export interface TimelineEventDTO {
 }
 
 /**
- * Chamado de OUTRA pessoa, na lista "Na cidade".
+ * Chamado de OUTRA pessoa, na LISTA "Na cidade".
  *
  * Deliberadamente magro: sem título, descrição, foto ou qualquer traço de quem
- * abriu. Não é a `TicketDTO` com campos opcionais — é outro tipo, para que
- * nenhum componente escreva `ticket.description` achando que existe. Do lado do
- * servidor a mesma lista de campos é a lista de permissão do `select`.
+ * abriu — o texto e a foto chegam pelo detalhe (`GET /tickets/public/:id`, que
+ * devolve `CitizenTicketDetailDTO`). Não é a `TicketDTO` com campos opcionais —
+ * é outro tipo, para que nenhum cartão escreva `ticket.description` achando que
+ * existe. Do lado do servidor a mesma lista de campos é a lista de permissão do
+ * `select`.
  */
 export interface PublicTicketDTO {
   id: string;
@@ -115,7 +117,12 @@ export interface MetricsDTO {
   recent: TicketDTO[];
 }
 
-/** Detalhe como o CIDADÃO o recebe: o chamado mais a linha do tempo completa. */
+/**
+ * Detalhe como o CIDADÃO o recebe: o chamado mais a linha do tempo completa.
+ *
+ * Vale para o próprio chamado e para o de outra pessoa aberto em "Na cidade" —
+ * mesma forma nos dois casos, e em nenhum deles há quem abriu.
+ */
 export interface CitizenTicketDetailDTO extends TicketDTO {
   timeline: TimelineEventDTO[];
 }

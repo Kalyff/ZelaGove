@@ -19,6 +19,7 @@ import {
 } from '@zeladoria/ui';
 import { m } from 'framer-motion';
 import { useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { SignOutButton } from '../components/SignOutButton';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { listPublicTickets } from '../lib/api';
@@ -30,9 +31,8 @@ import { listPublicTickets } from '../lib/api';
  * prefeitura executa. Por isso a lista traz também os concluídos recentes: uma
  * lista só de problema em aberto mostra fila, não trabalho.
  *
- * NÃO leva ao detalhe, e não é esquecimento: não existe detalhe a mostrar. O
- * servidor manda categoria, status e local, e nada mais — a leitura completa de
- * um chamado continua escopada a quem o abriu.
+ * O cartão é enxuto (categoria, status e local) e leva ao detalhe completo em
+ * `/chamados/na-cidade/:id` — texto, foto e andamento, sem quem abriu.
  */
 export default function NearbyTickets() {
   const { announce } = useAnnouncer();
@@ -179,9 +179,10 @@ function PublicTicketCard({
   distance: number | null;
 }) {
   return (
-    /* `<article>` e não `<Link>`: este cartão não leva a lugar nenhum, e um
-       cartão clicável que não abre nada é pior que um cartão estático. */
-    <article className="rounded-card border border-line bg-surface p-4">
+    <Link
+      to={`/chamados/na-cidade/${ticket.id}`}
+      className="block rounded-card border border-line bg-surface p-4 transition-colors hover:border-line-strong hover:bg-surface-sunken active:scale-[0.98]"
+    >
       <div className="flex items-center justify-between gap-3">
         <StatusBadge status={ticket.status} label={ticket.statusLabel} />
         <time className="font-mono text-xs text-content-tertiary" dateTime={ticket.createdAt}>
@@ -200,6 +201,6 @@ function PublicTicketCard({
         )}
         <span className="font-mono text-[11px] text-content-tertiary">{ticket.protocol}</span>
       </div>
-    </article>
+    </Link>
   );
 }

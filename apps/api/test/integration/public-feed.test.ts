@@ -4,18 +4,19 @@ import { prisma } from '../../src/infra/prisma';
 import { app, createAgency, createUser, loginAs, openTicket, resetDatabase, truncateTickets } from './helpers';
 
 /**
- * Lista "Na cidade" — `GET /api/v1/tickets/public`.
+ * "Na cidade" — `GET /api/v1/tickets/public` (lista) e
+ * `GET /api/v1/tickets/public/:id` (detalhe).
  *
- * Esta é a ÚNICA rota do app do cidadão que devolve chamado de outra pessoa, e
- * isso é intencional: serve para não abrir chamado duplicado e para ver que a
+ * São as ÚNICAS rotas do app do cidadão que devolvem chamado de outra pessoa, e
+ * isso é intencional: servem para não abrir chamado duplicado e para ver que a
  * prefeitura executa. Não é um afrouxamento do isolamento por `userId` — é um
- * caminho adicional cuja carga foi reduzida na ORIGEM, no `select` do
- * `listPublicTickets`, para não conter nada que identifique quem abriu.
+ * caminho adicional, com a MESMA regra de visibilidade para lista e detalhe
+ * (`publicScope`), que nunca carrega quem abriu.
  *
- * O teste do conjunto exato de chaves é o mais importante do arquivo: é ele que
- * transforma "lembrar de não expor descrição e foto de terceiro" em "o teste
- * quebra". Sem ele, um `...ticket` distraído vaza texto livre onde as pessoas
- * escrevem o próprio endereço.
+ * Os testes de conjunto exato de chaves são os mais importantes do arquivo: a
+ * lista tem a sua lista de permissão, e o detalhe tem de ser idêntico, chave a
+ * chave, ao que o próprio autor recebe. Um `user` incluído por descuido quebra
+ * aqui em vez de expor nome e e-mail.
  */
 describe('lista pública de chamados', () => {
   let joaoToken: string;
@@ -91,21 +92,14 @@ describe('lista pública de chamados', () => {
     ].sort());
   });
 
-  it('não vaza descrição, foto nem qualquer traço de quem abriu', async () => {
-    await openTicket(anaToken, {
-      title: 'Poste apagado em frente à minha casa',
-      description: 'Rua das Acácias, 120 — casa da esquina, onde eu moro.',
-    });
+  it('não carrega nenhum traço de quem abriu', async () => {
+    await openTicket(anaToken);
 
     const bruto = JSON.stringify((await publicFeed(joaoToken).expect(200)).body);
 
-    // Contra o texto que o cidadão escreveu achando que só a prefeitura leria.
-    expect(bruto).not.toContain('Acácias');
-    expect(bruto).not.toContain('onde eu moro');
-    expect(bruto).not.toContain('Poste apagado');
     expect(bruto).not.toContain('ana@teste.com');
     expect(bruto).not.toContain('Ana Beatriz');
-    expect(bruto).not.toMatch(/"(description|photoUrl|photoKey|userId|citizen|user)"/);
+    expect(bruto).not.toMatch(/"(userId|citizen|user)"/);
   });
 
   /* ---- escopo da lista ------------------------------------------------ */
@@ -179,5 +173,103 @@ describe('lista pública de chamados', () => {
     await openTicket(anaToken);
     const res = await publicFeed(joaoToken).expect(200);
     expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  /* ---- detalhe: GET /tickets/public/:id ------------------------------- */
+
+  describe('detalhe de um chamado da cidade', () => {
+    const publicDetail = (token: string, id: string) =>
+      request(app).get(`/api/v1/tickets/public/${id}`).set('Authorization', `Bearer ${token}`);
+
+    it('mostra a um cidadão o chamado de OUTRO, com texto e andamento', async () => {
+      const daAna = await openTicket(anaToken, {
+        title: 'Poste apagado na praça',
+        description: 'Está apagado há uma semana.',
+      });
+      await request(app)
+        .patch(`/api/v1/admin/tickets/${daAna.id}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .field('status', 'in_progress')
+        .field('note', 'Equipe de iluminação a caminho.')
+        .expect(200);
+
+      const res = await publicDetail(joaoToken, daAna.id).expect(200);
+
+      expect(res.body.title).toBe('Poste apagado na praça');
+      expect(res.body.description).toBe('Está apagado há uma semana.');
+      expect(res.body.timeline.map((e: { note: string | null }) => e.note)).toContain(
+        'Equipe de iluminação a caminho.'
+      );
+    });
+
+    /**
+     * "Tudo menos identidade" dito como teste: a forma é exatamente a do
+     * detalhe que a própria autora recebe. Campo novo no detalhe do autor
+     * precisa ser decisão consciente para aparecer aqui também — e vice-versa.
+     */
+    it('tem EXATAMENTE as chaves do detalhe que o próprio autor recebe', async () => {
+      const daAna = await openTicket(anaToken);
+
+      const alheio = await publicDetail(joaoToken, daAna.id).expect(200);
+      const proprio = await request(app)
+        .get(`/api/v1/tickets/${daAna.id}`)
+        .set('Authorization', `Bearer ${anaToken}`)
+        .expect(200);
+
+      expect(Object.keys(alheio.body).sort()).toEqual(Object.keys(proprio.body).sort());
+      expect(Object.keys(alheio.body.timeline[0]).sort()).toEqual(
+        Object.keys(proprio.body.timeline[0]).sort()
+      );
+    });
+
+    it('não carrega nenhum traço de quem abriu', async () => {
+      const daAna = await openTicket(anaToken);
+
+      const bruto = JSON.stringify((await publicDetail(joaoToken, daAna.id).expect(200)).body);
+
+      expect(bruto).not.toContain('ana@teste.com');
+      expect(bruto).not.toContain('Ana Beatriz');
+      expect(bruto).not.toMatch(/"(userId|citizen|user)"/);
+    });
+
+    /* A regra de visibilidade é a da lista: saiu dela, o id não abre mais. */
+
+    it('responde 404 para chamado encaminhado', async () => {
+      const orgao = await createAgency();
+      const externo = await openTicket(anaToken);
+      await request(app)
+        .post(`/api/v1/admin/tickets/${externo.id}/forward`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ agencyId: orgao.id, note: 'Competência da concessionária.' })
+        .expect(200);
+
+      await publicDetail(joaoToken, externo.id).expect(404);
+    });
+
+    it('responde 404 para concluído fora da janela de 30 dias', async () => {
+      const antigo = await openTicket(anaToken);
+      await request(app)
+        .patch(`/api/v1/admin/tickets/${antigo.id}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .field('status', 'done')
+        .field('note', 'Serviço executado.')
+        .expect(200);
+      await prisma.$executeRawUnsafe(
+        `UPDATE tickets SET updated_at = now() - interval '31 days' WHERE id = '${antigo.id}'`
+      );
+
+      await publicDetail(joaoToken, antigo.id).expect(404);
+    });
+
+    it('responde 404 para id inexistente', async () => {
+      await publicDetail(joaoToken, '00000000-0000-0000-0000-000000000000').expect(404);
+    });
+
+    it('exige autenticação e recusa o gestor', async () => {
+      const daAna = await openTicket(anaToken);
+
+      await request(app).get(`/api/v1/tickets/public/${daAna.id}`).expect(401);
+      await publicDetail(adminToken, daAna.id).expect(403);
+    });
   });
 });

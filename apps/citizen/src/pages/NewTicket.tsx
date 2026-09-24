@@ -223,6 +223,13 @@ export default function NewTicket() {
 
         {formError && <ErrorState title="Não foi possível enviar" description={formError} />}
 
+        {/* Antes do botão, e não escondido em termos de uso: quem escreve
+            "em frente à minha casa" precisa saber, na hora, quem vai ler. */}
+        <p className="text-xs leading-relaxed text-content-secondary">
+          O chamado aparece para outros cidadãos em &ldquo;Na cidade&rdquo;, com título, detalhes
+          e foto. Seu nome não é mostrado.
+        </p>
+
         <Button
           type="submit"
           variant="success"

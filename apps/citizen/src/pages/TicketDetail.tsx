@@ -13,9 +13,33 @@ import { coords } from '@zeladoria/shared';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ForwardedNotice } from '../components/ForwardedNotice';
 import { Timeline } from '../components/Timeline';
-import { getTicket } from '../lib/api';
+import { getPublicTicket, getTicket } from '../lib/api';
 
-export default function TicketDetail() {
+/**
+ * De onde o detalhe foi aberto. A tela é a mesma — o servidor devolve a mesma
+ * forma nos dois casos —, mas a leitura vem de rotas diferentes: `mine` é
+ * escopada por `userId`, `city` é o chamado de qualquer pessoa que está na lista
+ * "Na cidade". Chaves de cache separadas para que um não sirva o outro.
+ */
+const SOURCES = {
+  mine: {
+    queryKey: 'ticket',
+    load: getTicket,
+    backTo: '/chamados',
+    backLabel: 'Voltar aos meus chamados',
+    notFound: 'Ele pode ter sido removido, ou o endereço está incorreto.',
+  },
+  city: {
+    queryKey: 'public-ticket',
+    load: getPublicTicket,
+    backTo: '/chamados/na-cidade',
+    backLabel: 'Voltar aos chamados da cidade',
+    notFound: 'Ele pode ter saído da lista da cidade, ou o endereço está incorreto.',
+  },
+} as const;
+
+export default function TicketDetail({ source }: { source: keyof typeof SOURCES }) {
+  const { queryKey, load, backTo, backLabel, notFound } = SOURCES[source];
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const {
@@ -23,7 +47,7 @@ export default function TicketDetail() {
     isLoading,
     isError,
     refetch,
-  } = useQuery({ queryKey: ['ticket', id], queryFn: () => getTicket(id) });
+  } = useQuery({ queryKey: [queryKey, id], queryFn: () => load(id) });
 
   const mapsUrl = ticket
     ? `https://www.google.com/maps?q=${ticket.latitude},${ticket.longitude}`
@@ -43,7 +67,7 @@ export default function TicketDetail() {
   return (
     <>
       <header className="flex shrink-0 items-center gap-2 border-b border-line px-4 py-3">
-        <IconButton label="Voltar aos meus chamados" onClick={() => navigate('/chamados')}>
+        <IconButton label={backLabel} onClick={() => navigate(backTo)}>
           <IconBack />
         </IconButton>
         <h1 className="font-mono text-sm font-medium tracking-wide text-content">
@@ -79,11 +103,11 @@ export default function TicketDetail() {
           <div className="space-y-3 px-6 pt-6">
             <ErrorState
               title="Chamado não encontrado"
-              description="Ele pode ter sido removido, ou o endereço está incorreto."
+              description={notFound}
               onRetry={() => refetch()}
             />
-            <Button variant="ghost" fullWidth onClick={() => navigate('/chamados')}>
-              Voltar aos meus chamados
+            <Button variant="ghost" fullWidth onClick={() => navigate(backTo)}>
+              {backLabel}
             </Button>
           </div>
         )}

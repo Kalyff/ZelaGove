@@ -44,9 +44,12 @@ Voltar para o [README](../README.md).
 - **Câmera sem biblioteca:** `<input type="file" accept="image/*" capture="environment">`.
 - **Localização é obrigatória para enviar.** Não há valor padrão — chutar o centro
   da cidade colocaria um ponto errado no mapa do gestor.
-- **"Na cidade" não leva ao detalhe, e não é esquecimento.** Não existe detalhe a
-  mostrar: o servidor manda categoria, status e local, e nada mais. A leitura
-  completa de um chamado continua escopada a quem o abriu.
+- **"Na cidade" leva ao detalhe completo, sem quem abriu.** O cartão da lista é
+  enxuto (categoria, status e local); tocar nele abre `/chamados/na-cidade/:id`,
+  a mesma tela do detalhe próprio — título, descrição, foto e andamento —, mas sem
+  nome nem e-mail do solicitante. Só abre enquanto o chamado está na lista. O
+  formulário de abertura avisa, antes do botão de envio, que o chamado fica
+  visível a outros cidadãos.
 - **A ordenação por proximidade só roda quando o usuário pede.** A página nunca
   aciona o GPS sozinha — pedir permissão sem o usuário ter solicitado nada é o
   caminho mais rápido para um "bloquear" permanente naquele aparelho.

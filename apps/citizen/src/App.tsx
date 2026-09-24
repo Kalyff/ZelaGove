@@ -92,7 +92,11 @@ export default function App() {
                         </Route>
                         <Route element={<PhoneLayout />}>
                           <Route path="/chamados/novo" element={<NewTicket />} />
-                          <Route path="/chamados/:id" element={<TicketDetail />} />
+                          <Route path="/chamados/:id" element={<TicketDetail source="mine" />} />
+                          <Route
+                            path="/chamados/na-cidade/:id"
+                            element={<TicketDetail source="city" />}
+                          />
                         </Route>
                       </Route>
                       {/* Requisito 4.7: rota inválida volta para a raiz. */}

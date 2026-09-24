@@ -2,8 +2,18 @@ import { Router } from 'express';
 import { createTicketSchema } from '@zeladoria/shared';
 import { asyncHandler } from '../../http/asyncHandler';
 import { requireAuth, requireRole } from '../../middleware/auth';
-import { toPublicTicketDTO, toTicketDTO, toTicketListDTO, toTimelineDTO } from './ticket.mapper';
-import { getCitizenTicket, listCitizenTickets, listPublicTickets } from './ticket.queries';
+import {
+  toCitizenTicketDetailDTO,
+  toPublicTicketDTO,
+  toTicketDTO,
+  toTicketListDTO,
+} from './ticket.mapper';
+import {
+  getCitizenTicket,
+  getPublicTicket,
+  listCitizenTickets,
+  listPublicTickets,
+} from './ticket.queries';
 import { createTicket } from './ticket.service';
 import { photoUpload, savePhotoIfPresent } from './upload';
 
@@ -31,20 +41,21 @@ citizenTicketRoutes.post(
 );
 
 /**
- * Lista "Na cidade": chamados de TODOS os cidadãos, em projeção reduzida.
+ * "Na cidade": chamados de TODOS os cidadãos — a lista, em projeção reduzida,
+ * e o detalhe de cada um.
  *
- * ATENÇÃO — esta rota devolve dado de outra pessoa DE PROPÓSITO. É a única do
- * app do cidadão que faz isso, e não contradiz o isolamento por `userId`: ela é
- * um caminho adicional com escopo deliberadamente diferente, cuja carga foi
- * reduzida na origem (ver `listPublicTickets`) para não conter nada que
- * identifique quem abriu. `GET /tickets` e `GET /tickets/:id` seguem escopados.
+ * ATENÇÃO — estas duas rotas devolvem dado de outra pessoa DE PROPÓSITO. São as
+ * únicas do app do cidadão que fazem isso, e não contradizem o isolamento por
+ * `userId`: são um caminho adicional com escopo deliberadamente diferente
+ * (`publicScope`), e nenhuma das duas carrega quem abriu. `GET /tickets` e
+ * `GET /tickets/:id` seguem escopados.
  *
- * Não é pública para a internet: `requireAuth` + `requireRole('citizen')`
+ * Não são públicas para a internet: `requireAuth` + `requireRole('citizen')`
  * valem para todo este router, então é preciso estar autenticado como cidadão.
  *
- * Registrada ANTES de `/:id`: o Express casa na ordem, e sem isto "public"
- * chegaria como um id e a resposta seria 404. Mesmo motivo de `/map` vir antes
- * de `/:id` no router do painel.
+ * `/public` é registrada ANTES de `/:id`: o Express casa na ordem, e sem isto
+ * "public" chegaria como um id e a resposta seria 404. Mesmo motivo de `/map`
+ * vir antes de `/:id` no router do painel.
  */
 citizenTicketRoutes.get(
   '/public',
@@ -55,14 +66,17 @@ citizenTicketRoutes.get(
 );
 
 citizenTicketRoutes.get(
+  '/public/:id',
+  asyncHandler(async (req, res) => {
+    const ticket = await getPublicTicket(req.params.id);
+    res.json(await toCitizenTicketDetailDTO(ticket));
+  })
+);
+
+citizenTicketRoutes.get(
   '/:id',
   asyncHandler(async (req, res) => {
     const ticket = await getCitizenTicket(req.user!.id, req.params.id);
-    res.json({
-      ...(await toTicketDTO(ticket, 'citizen')),
-      // Requisito 4.2: o cidadão vê a timeline completa, inclusive notas e
-      // fotos do gestor. Transparência é funcionalidade, não vazamento.
-      timeline: await toTimelineDTO(ticket.events, 'citizen'),
-    });
+    res.json(await toCitizenTicketDetailDTO(ticket));
   })
 );

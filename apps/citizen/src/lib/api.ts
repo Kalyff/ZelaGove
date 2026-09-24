@@ -36,6 +36,14 @@ export function listPublicTickets(): Promise<PublicTicketListDTO> {
   return client.request('/tickets/public');
 }
 
+/**
+ * Detalhe de um chamado da lista "Na cidade", de qualquer autor. Mesma forma do
+ * `getTicket`, sem quem abriu; fora da lista o servidor responde 404.
+ */
+export function getPublicTicket(id: string): Promise<CitizenTicketDetailDTO> {
+  return client.request(`/tickets/public/${id}`);
+}
+
 export function createTicket(form: FormData): Promise<TicketDTO> {
   return client.request('/tickets', { method: 'POST', body: form });
 }

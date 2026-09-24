@@ -2,6 +2,7 @@ import type { Agency, Prisma, Ticket, TicketEvent } from '@prisma/client';
 import {
   CATEGORY_LABELS,
   statusLabel,
+  type CitizenTicketDetailDTO,
   type MapPointDTO,
   type PublicTicketDTO,
   type TicketCategory,
@@ -64,18 +65,34 @@ export async function toTicketListDTO(
 }
 
 /**
- * Chamado de OUTRA pessoa, como o cidadão o vê na lista "Na cidade".
+ * Detalhe como o cidadão o recebe: o do próprio chamado e o de um chamado
+ * alheio aberto pela lista "Na cidade". Os dois passam por aqui para que a
+ * forma seja a mesma — nenhum dos dois carrega quem abriu.
  *
- * Função separada de propósito — `toTicketDTO` carrega `description`,
- * `photoUrl` e os dados do encaminhamento, e reusá-la aqui exporia texto livre
- * e foto de terceiros. **A lista de campos abaixo É a lista de permissão**, e o
- * teste de integração compara o conjunto exato de chaves justamente para que um
- * `...ticket` acidental quebre em vez de vazar. (O tipo de retorno reforça, mas
+ * Requisito 4.2: a timeline completa, inclusive notas e fotos do gestor.
+ * Transparência é funcionalidade, não vazamento.
+ */
+export async function toCitizenTicketDetailDTO(
+  ticket: TicketWithAgency & { events: EventWithAgency[] }
+): Promise<CitizenTicketDetailDTO> {
+  return {
+    ...(await toTicketDTO(ticket, 'citizen')),
+    timeline: await toTimelineDTO(ticket.events, 'citizen'),
+  };
+}
+
+/**
+ * Chamado de OUTRA pessoa, como o cidadão o vê na LISTA "Na cidade".
+ *
+ * Função separada de propósito: a lista mostra só o que cabe num cartão, e o
+ * texto e a foto ficam para o detalhe (`toCitizenTicketDetailDTO`). **A lista
+ * de campos abaixo É a lista de permissão**, e o teste de integração compara o
+ * conjunto exato de chaves para que um `...ticket` acidental quebre em vez de
+ * inchar a resposta ou levar `userId` junto. (O tipo de retorno reforça, mas
  * não substitui o teste: spread escapa da checagem de propriedade excedente.)
  *
  * `protocol` entra porque é o que permite dizer "já existe o 2026-0000007 para
- * isso"; ele não dá acesso a nada — a leitura do detalhe continua escopada por
- * `userId`.
+ * isso".
  */
 export function toPublicTicketDTO(ticket: {
   id: string;

@@ -39,12 +39,17 @@ pessoa sem saber por que o cadastro falhou.
 | GET | `/tickets` | só os do próprio usuário (requisito 4.6) |
 | POST | `/tickets` | multipart, foto opcional de até 5 MB |
 | GET | `/tickets/public` | chamados de TODOS, em projeção reduzida |
+| GET | `/tickets/public/:id` | detalhe de um chamado da lista pública, sem o solicitante |
 | GET | `/tickets/:id` | escopado por `userId`; chamado alheio responde 404 |
 
-`/tickets/public` é a lista "Na cidade" e é a única rota do app do cidadão que
-devolve dado de outra pessoa. O corte é feito na origem, pelo `select` de
-`listPublicTickets` — `description`, `photoKey` e `userId` não saem do banco.
-Exige estar autenticado como cidadão.
+`/tickets/public` e `/tickets/public/:id` são a aba "Na cidade" e as únicas rotas
+do app do cidadão que devolvem dado de outra pessoa. A lista é enxuta (o `select`
+de `listPublicTickets` traz categoria, status e local); o detalhe tem a mesma
+forma do `/tickets/:id` do autor — título, descrição, foto e linha do tempo —, e
+nenhuma das duas carrega nome, e-mail ou `userId` de quem abriu. As duas seguem a
+mesma regra de visibilidade (`publicScope`): pendente, em andamento ou concluído
+há até 30 dias, nunca encaminhado; fora dela o detalhe responde 404. Exigem estar
+autenticado como cidadão.
 
 ## Painel (admin)
 
