@@ -1,5 +1,5 @@
 import { timelineDate, type TimelineEventDTO } from '@zeladoria/shared';
-import { STATUS_ICON, STATUS_TIMELINE_NODE } from '@zeladoria/ui';
+import { timelineEventVisual } from '@zeladoria/ui';
 import { m } from 'framer-motion';
 
 /* Ícone e cor do nó vêm do design system: são os mesmos do painel, e o
@@ -33,7 +33,7 @@ export function Timeline({
         className="absolute bottom-3 left-[15px] top-3 w-px bg-gradient-to-b from-line-strong to-transparent"
       />
       {events.map((event, i) => {
-        const Icon = STATUS_ICON[event.status];
+        const { Icon, node, title } = timelineEventVisual(event);
         return (
           <m.li
             key={event.id}
@@ -45,14 +45,15 @@ export function Timeline({
             transition={{ delay: Math.min(i, 6) * 0.05, duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
           >
             <span
-              className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-surface ${STATUS_TIMELINE_NODE[event.status]}`}
+              className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-surface ${node}`}
             >
               <Icon className="h-4 w-4" />
             </span>
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                {/* Rótulo do servidor: "Em Deslocamento" para o cidadão. */}
-                <p className="font-display text-sm font-bold text-content">{event.statusLabel}</p>
+                {/* Rótulo do servidor ("Em Deslocamento" para o cidadão), ou
+                    "Observação" quando o gestor só anotou algo. */}
+                <p className="font-display text-sm font-bold text-content">{title}</p>
                 <time
                   className="font-mono text-xs text-content-tertiary"
                   dateTime={event.createdAt}

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  addTicketNoteSchema,
   appendExternalProtocolSchema,
   forwardTicketSchema,
   listTicketsQuerySchema,
@@ -10,6 +11,7 @@ import { requireAuth, requireRole } from '../../middleware/auth';
 import { toMapPointDTO, toTicketDTO, toTicketListDTO, toTimelineDTO } from './ticket.mapper';
 import { getTicketForAdmin, listAllTickets, listTicketsForMap } from './ticket.queries';
 import {
+  addTicketNote,
   appendExternalProtocol,
   forwardTicket,
   updateTicketStatus,
@@ -98,6 +100,18 @@ adminTicketRoutes.post(
   asyncHandler(async (req, res) => {
     const input = appendExternalProtocolSchema.parse(req.body);
     const ticket = await appendExternalProtocol(req.params.id, req.user!.id, input);
+    res.json(await toTicketDTO(ticket, 'admin'));
+  })
+);
+
+/** Observação do gestor na linha do tempo, com foto opcional. Não muda status. */
+adminTicketRoutes.post(
+  '/:id/notes',
+  photoUpload.single('photo'),
+  asyncHandler(async (req, res) => {
+    const input = addTicketNoteSchema.parse(req.body);
+    const photoKey = await savePhotoIfPresent(req, 'notes');
+    const ticket = await addTicketNote(req.params.id, req.user!.id, input, photoKey);
     res.json(await toTicketDTO(ticket, 'admin'));
   })
 );

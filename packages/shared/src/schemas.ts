@@ -79,6 +79,15 @@ export const appendExternalProtocolSchema = z.object({
 export type AppendExternalProtocolInput = z.infer<typeof appendExternalProtocolSchema>;
 
 /**
+ * Observação do gestor na linha do tempo, sem mudar o status. Pública: o
+ * cidadão lê junto com o resto do histórico.
+ */
+export const addTicketNoteSchema = z.object({
+  note: z.string().trim().min(1, 'Escreva a observação.').max(2000),
+});
+export type AddTicketNoteInput = z.infer<typeof addTicketNoteSchema>;
+
+/**
  * `status` aceita UM valor ou vários separados por vírgula.
  *
  * O quadro de ordens precisa pedir exatamente os três status operacionais

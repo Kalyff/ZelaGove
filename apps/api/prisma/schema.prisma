@@ -43,6 +43,14 @@ enum AgencyKind {
   outro
 }
 
+/// O que um evento da linha do tempo registra. `note` é a observação do gestor:
+/// carrega o status VIGENTE, mas não é transição — sem a marca, a linha do
+/// tempo a mostraria como se o status tivesse mudado de novo.
+enum TicketEventKind {
+  status
+  note
+}
+
 enum TicketCategory {
   lighting
   paving
@@ -104,6 +112,7 @@ model TicketEvent {
   ticketId         String       @map("ticket_id") @db.Uuid
   actorId          String?      @map("actor_id") @db.Uuid
   status           TicketStatus
+  kind             TicketEventKind @default(status)
   note             String?
   photoKey         String?      @map("photo_key")
   /// Para ONDE foi este encaminhamento. Mora no evento, e não só no ticket,

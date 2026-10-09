@@ -1,6 +1,7 @@
 import type { Prisma, Ticket } from '@prisma/client';
 import {
   teamDispatchedNote,
+  type AddTicketNoteInput,
   type AppendExternalProtocolInput,
   type CreateTicketInput,
   type ForwardTicketInput,
@@ -208,6 +209,42 @@ export async function appendExternalProtocol(
         note: input.note?.trim() || 'Protocolo do órgão registrado.',
         agencyId: existing.forwardedToId,
         externalProtocol: input.externalProtocol.trim(),
+      },
+    });
+
+    // `updatedAt` precisa mexer para a listagem reordenar.
+    return tx.ticket.update({
+      where: { id: ticketId },
+      data: {},
+      include: { forwardedTo: true },
+    });
+  });
+}
+
+/**
+ * Observação do gestor na linha do tempo — registra andamento sem transicionar.
+ *
+ * O evento leva o status VIGENTE e `kind: 'note'`: é a marca que impede a
+ * linha do tempo de mostrar a observação como uma nova mudança de status.
+ */
+export async function addTicketNote(
+  ticketId: string,
+  actorId: string,
+  input: AddTicketNoteInput,
+  photoKey: string | null
+) {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.ticket.findUnique({ where: { id: ticketId } });
+    if (!existing) throw Errors.ticketNotFound();
+
+    await tx.ticketEvent.create({
+      data: {
+        ticketId,
+        actorId,
+        status: existing.status, // inalterado: o evento anota, não transiciona
+        kind: 'note',
+        note: input.note.trim(),
+        photoKey,
       },
     });
 

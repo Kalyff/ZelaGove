@@ -1,5 +1,5 @@
 import { timelineDate, type TimelineEventDTO } from '@zeladoria/shared';
-import { STATUS_ICON, STATUS_TIMELINE_NODE } from '@zeladoria/ui';
+import { timelineEventVisual } from '@zeladoria/ui';
 
 /* Ícone e cor do nó vêm do design system: são os mesmos do app do cidadão. */
 
@@ -12,17 +12,17 @@ export function Timeline({ events }: { events: TimelineEventDTO[] }) {
         aria-hidden
       />
       {events.map((event) => {
-        const Icon = STATUS_ICON[event.status];
+        const { Icon, node, title } = timelineEventVisual(event);
         return (
           <li key={event.id} className="relative flex gap-3.5">
             <span
-              className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-surface-raised ${STATUS_TIMELINE_NODE[event.status]}`}
+              className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-surface-raised ${node}`}
             >
               <Icon className="h-4 w-4" />
             </span>
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                <p className="font-display text-sm font-bold text-content">{event.statusLabel}</p>
+                <p className="font-display text-sm font-bold text-content">{title}</p>
                 <time
                   className="font-mono text-xs text-content-tertiary"
                   dateTime={event.createdAt}

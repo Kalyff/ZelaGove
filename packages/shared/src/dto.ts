@@ -10,7 +10,7 @@
  * Só forma. Rótulo em português vem de `labels.ts` e é resolvido na borda do
  * servidor; validação de entrada vem de `schemas.ts`.
  */
-import type { AgencyKind, TicketCategory, TicketStatus, UserRole } from './enums';
+import type { AgencyKind, TicketCategory, TicketEventKind, TicketStatus, UserRole } from './enums';
 
 /**
  * Órgão externo, só com os campos PÚBLICOS.
@@ -60,6 +60,8 @@ export interface TicketDTO {
 
 export interface TimelineEventDTO {
   id: string;
+  /** `note`: observação do gestor — `status` é o vigente, não uma transição. */
+  kind: TicketEventKind;
   status: TicketStatus;
   statusLabel: string;
   note: string | null;

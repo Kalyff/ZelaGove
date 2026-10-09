@@ -146,6 +146,7 @@ export async function toEventDTO(
 ): Promise<TimelineEventDTO> {
   return {
     id: event.id,
+    kind: event.kind,
     status: event.status,
     statusLabel: statusLabel(event.status, audience),
     note: event.note,

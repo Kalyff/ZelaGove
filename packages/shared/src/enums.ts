@@ -31,6 +31,14 @@ export const BOARD_STATUSES = ['pending', 'in_progress', 'done'] as const;
 export type BoardStatus = (typeof BOARD_STATUSES)[number];
 
 /**
+ * O que um evento da linha do tempo registra: `status` é transição (ou a
+ * abertura, encaminhamento, protocolo); `note` é observação do gestor, que
+ * carrega o status vigente sem mudá-lo.
+ */
+export const TICKET_EVENT_KINDS = ['status', 'note'] as const;
+export type TicketEventKind = (typeof TICKET_EVENT_KINDS)[number];
+
+/**
  * Tipo de órgão externo. `secretaria` e `consorcio` existem porque o caso mais
  * comum não é federal: é outra secretaria da própria prefeitura, ou um consórcio
  * intermunicipal de resíduos. Sem eles, os dois virariam "outro" e o dado se

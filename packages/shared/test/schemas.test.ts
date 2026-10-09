@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addTicketNoteSchema,
   createTicketSchema,
   registerSchema,
   forwardTicketSchema,
@@ -192,5 +193,19 @@ describe('registerSchema', () => {
   it('descarta `role` vindo do corpo', () => {
     const parsed = registerSchema.parse({ ...valido, role: 'admin' });
     expect(parsed).not.toHaveProperty('role');
+  });
+});
+
+describe('observação do gestor', () => {
+  it('recusa observação vazia ou só com espaços, apontando o campo', () => {
+    for (const note of ['', '   ']) {
+      const result = addTicketNoteSchema.safeParse({ note });
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.error.issues[0].path).toEqual(['note']);
+    }
+  });
+
+  it('aceita texto e tira os espaços das pontas', () => {
+    expect(addTicketNoteSchema.parse({ note: '  Material solicitado.  ' }).note).toBe('Material solicitado.');
   });
 });

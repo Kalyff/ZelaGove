@@ -28,6 +28,15 @@ export const IconTruck = createIcon(
   </>,
 );
 
+/** Observação do gestor na linha do tempo — balão de fala com linhas. */
+export const IconNote = createIcon(
+  'IconNote',
+  <>
+    <path d="M4 5.5h16v11H10l-4.5 3.5v-3.5H4z" />
+    <path d="M8 9.5h8M8 12.5h5" />
+  </>,
+);
+
 export const IconAlert = createIcon(
   'IconAlert',
   <>

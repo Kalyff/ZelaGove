@@ -1,6 +1,7 @@
 import { Button, ErrorState, Field, Modal, Textarea } from '@zeladoria/ui';
 import { useEffect, useState } from 'react';
 import type { TicketDTO } from '@zeladoria/shared';
+import { PhotoPicker } from './PhotoPicker';
 
 /**
  * Requisito 3.2.7. Disparado tanto pelo drag-and-drop quanto pelo seletor de
@@ -28,7 +29,6 @@ export function CompletionModal({
 }) {
   const [note, setNote] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
 
   /* Limpa ao trocar de ordem: sem isto, a observação escrita para um chamado
      reaparecia no seguinte. */
@@ -36,25 +36,7 @@ export function CompletionModal({
     if (ticket) return;
     setNote('');
     setPhoto(null);
-    setPreview((old) => {
-      if (old) URL.revokeObjectURL(old);
-      return null;
-    });
   }, [ticket]);
-
-  useEffect(() => {
-    return () => {
-      if (preview) URL.revokeObjectURL(preview);
-    };
-  }, [preview]);
-
-  function pickPhoto(file: File | null) {
-    setPhoto(file);
-    setPreview((old) => {
-      if (old) URL.revokeObjectURL(old);
-      return file ? URL.createObjectURL(file) : null;
-    });
-  }
 
   return (
     <Modal
@@ -104,28 +86,12 @@ export function CompletionModal({
           )}
         </Field>
 
-        <div>
-          <span className="field-label">Foto da conclusão (opcional)</span>
-          <label className="block cursor-pointer overflow-hidden rounded-field border-2 border-dashed border-line-strong bg-surface-sunken text-center">
-            {preview ? (
-              <img
-                src={preview}
-                alt="Prévia da foto de conclusão"
-                className="h-40 w-full object-cover"
-              />
-            ) : (
-              <span className="flex h-24 items-center justify-center text-sm text-content-tertiary">
-                Escolher imagem
-              </span>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(e) => pickPhoto(e.target.files?.[0] ?? null)}
-            />
-          </label>
-        </div>
+        <PhotoPicker
+          label="Foto da conclusão (opcional)"
+          previewAlt="Prévia da foto de conclusão"
+          file={photo}
+          onChange={setPhoto}
+        />
 
         {/* Só banner quando o erro NÃO pertence a um campo — senão a mensagem
             apareceria duas vezes. */}

@@ -97,3 +97,11 @@ export function appendExternalProtocol(input: {
     body: JSON.stringify(body),
   });
 }
+
+/** Observação na linha do tempo, com foto opcional. Não muda o status. */
+export function addNote(input: { id: string; note: string; photo?: File | null }): Promise<TicketDTO> {
+  const form = new FormData();
+  form.append('note', input.note);
+  if (input.photo) form.append('photo', input.photo);
+  return client.request(`/admin/tickets/${input.id}/notes`, { method: 'POST', body: form });
+}
