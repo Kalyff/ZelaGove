@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { TICKET_STATUSES } from '../src/enums';
-import { STATUS_LABELS_ADMIN, STATUS_LABELS_CITIZEN, statusLabel } from '../src/labels';
+import {
+  STATUS_LABELS_ADMIN,
+  STATUS_LABELS_CITIZEN,
+  statusLabel,
+  teamDispatchedNote,
+} from '../src/labels';
 
 /**
  * Requisito 4.9. Este teste existe para travar a tentação de "resolver" a
@@ -21,5 +26,12 @@ describe('rótulos de status', () => {
       expect(statusLabel(status, 'citizen')).toBeTruthy();
       expect(statusLabel(status, 'admin')).toBeTruthy();
     }
+  });
+});
+
+describe('equipe acionada', () => {
+  it('nomeia o órgão da categoria com o artigo certo', () => {
+    expect(teamDispatchedNote('lighting')).toBe('Equipe da SMCCI acionada.');
+    expect(teamDispatchedNote('sanitation')).toBe('Equipe do SAERB acionada.');
   });
 });

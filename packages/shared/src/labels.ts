@@ -87,6 +87,32 @@ export const CATEGORY_LABELS: Record<TicketCategory, string> = {
   other: 'Outros',
 };
 
+/**
+ * Quem a prefeitura aciona para cada categoria, já com o artigo ("do SAERB",
+ * "da SMCCI") — é o que o cidadão lê ao ver "Em Deslocamento".
+ *
+ * Ao contrário de `SUGGESTED_AGENCY_KINDS`, aqui os nomes SÃO fixos: são as
+ * equipes da própria prefeitura de Rio Branco, não órgãos externos para onde o
+ * chamado é repassado.
+ */
+export const CATEGORY_TEAMS: Record<TicketCategory, string> = {
+  lighting: 'da SMCCI', // Secretaria Municipal de Cuidados com a Cidade
+  paving: 'da EMURB',
+  sanitation: 'do SAERB', // Serviço de Água e Esgoto de Rio Branco
+  traffic: 'da RBTRANS', // Superintendência Municipal de Transportes e Trânsito
+  cleaning: 'da SMCCI',
+  other: 'da Prefeitura',
+};
+
+/**
+ * A nota gravada no evento ao passar para Em Andamento. É GRAVADA, não gerada
+ * na exibição: se um órgão mudar de nome, o histórico continua dizendo quem foi
+ * acionado de fato naquele dia.
+ */
+export function teamDispatchedNote(category: TicketCategory): string {
+  return `Equipe ${CATEGORY_TEAMS[category]} acionada.`;
+}
+
 export function statusLabel(status: TicketStatus, audience: 'citizen' | 'admin'): string {
   return audience === 'citizen' ? STATUS_LABELS_CITIZEN[status] : STATUS_LABELS_ADMIN[status];
 }

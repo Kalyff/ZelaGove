@@ -59,6 +59,39 @@ describe('ciclo de vida do chamado', () => {
     expect(citizenView.body.status).toBe(adminView.body.status);
   });
 
+  it('diz ao cidadão qual equipe foi acionada ao entrar Em Andamento', async () => {
+    const ticket = await openTicket(citizenToken, { category: 'lighting' });
+    await request(app)
+      .patch(`/api/v1/admin/tickets/${ticket.id}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .field('status', 'in_progress')
+      .expect(200);
+
+    const detail = await request(app)
+      .get(`/api/v1/tickets/${ticket.id}`)
+      .set('Authorization', `Bearer ${citizenToken}`)
+      .expect(200);
+
+    expect(detail.body.timeline[0].note).toBe('Equipe da SMCCI acionada.');
+  });
+
+  it('mantém a nota do gestor ao entrar Em Andamento, se houver', async () => {
+    const ticket = await openTicket(citizenToken, { category: 'lighting' });
+    await request(app)
+      .patch(`/api/v1/admin/tickets/${ticket.id}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .field('status', 'in_progress')
+      .field('note', 'Equipe já no local.')
+      .expect(200);
+
+    const detail = await request(app)
+      .get(`/api/v1/tickets/${ticket.id}`)
+      .set('Authorization', `Bearer ${citizenToken}`)
+      .expect(200);
+
+    expect(detail.body.timeline[0].note).toBe('Equipe já no local.');
+  });
+
   it('RECUSA conclusão sem observação', async () => {
     const ticket = await openTicket(citizenToken);
 

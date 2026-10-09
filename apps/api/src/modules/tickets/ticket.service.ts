@@ -1,9 +1,10 @@
 import type { Prisma, Ticket } from '@prisma/client';
-import type {
-  AppendExternalProtocolInput,
-  CreateTicketInput,
-  ForwardTicketInput,
-  UpdateTicketStatusInput,
+import {
+  teamDispatchedNote,
+  type AppendExternalProtocolInput,
+  type CreateTicketInput,
+  type ForwardTicketInput,
+  type UpdateTicketStatusInput,
 } from '@zeladoria/shared';
 import { Errors } from '../../http/errors';
 import { prisma } from '../../infra/prisma';
@@ -119,7 +120,10 @@ export async function updateTicketStatus(
         ticketId,
         actorId,
         status: input.status,
-        note: input.note?.trim() || null,
+        // Sem nota do gestor, o cidadão ainda fica sabendo quem foi acionado.
+        note:
+          input.note?.trim() ||
+          (input.status === 'in_progress' ? teamDispatchedNote(existing.category) : null),
         photoKey,
       },
     });

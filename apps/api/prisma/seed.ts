@@ -1,4 +1,5 @@
 import { PrismaClient, type AgencyKind, type TicketCategory, type TicketStatus } from '@prisma/client';
+import { teamDispatchedNote } from '@zeladoria/shared';
 import { hashPassword } from '../src/modules/auth/password';
 
 const prisma = new PrismaClient();
@@ -142,7 +143,7 @@ async function main() {
           ticketId: ticket.id,
           actorId: admin.id,
           status: 'in_progress',
-          note: 'Equipe designada e a caminho do local.',
+          note: teamDispatchedNote(sample.category),
           createdAt: new Date(createdAt.getTime() + 36e5 * 6),
         },
       });
