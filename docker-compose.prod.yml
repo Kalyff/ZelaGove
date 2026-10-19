@@ -88,6 +88,7 @@ services:
         VITE_MAP_LAT: ${VITE_MAP_LAT}
         VITE_MAP_LNG: ${VITE_MAP_LNG}
         VITE_MAP_ZOOM: ${VITE_MAP_ZOOM}
+        VITE_MAP_TILES_KEY: ${VITE_MAP_TILES_KEY}
     restart: unless-stopped
     depends_on:
       - api

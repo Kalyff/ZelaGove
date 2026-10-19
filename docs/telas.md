@@ -99,6 +99,9 @@ Voltar para o [README](../README.md).
   colorido e disputa atenção com os círculos de status. Uso público de qualquer
   provedor tem política de uso aceitável e não é adequado para produção em
   volume; avalie antes de publicar. A atribuição precisa creditar OSM **e** CARTO.
+  Desde setembro de 2026 a CARTO exige chave (`VITE_MAP_TILES_KEY`, gratuita até
+  1M requisições/mês para uso comercial e 5M para não comercial); sem ela os
+  tiles vêm com a marca d'água "API KEY REQUIRED".
 - **"Encaminhados" é destino próprio, não uma quarta coluna do quadro.**
   `forwarded` é terminal e acumula para sempre; virar coluna faria os pendentes
   saírem em silêncio da resposta de 100 linhas do Kanban. Lá há paginação de

@@ -60,6 +60,7 @@ ARG VITE_CITIZEN_URL
 ARG VITE_MAP_LAT
 ARG VITE_MAP_LNG
 ARG VITE_MAP_ZOOM
+ARG VITE_MAP_TILES_KEY
 RUN npm run build --workspace @zeladoria/citizen \
  && npm run build --workspace @zeladoria/admin
 

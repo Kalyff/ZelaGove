@@ -147,6 +147,7 @@ o resto dos `.env.example` já funciona com o `docker compose` local.
 | `VITE_MAP_LAT` | `-9.97499` |
 | `VITE_MAP_LNG` | `-67.8243` |
 | `VITE_MAP_ZOOM` | `13` |
+| `VITE_MAP_TILES_KEY` | chave CARTO, gratuita em carto.com/basemaps/apikey |
 
 ## Estrutura do projeto
 

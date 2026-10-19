@@ -34,10 +34,16 @@ const ZOOM = Number(import.meta.env.VITE_MAP_ZOOM ?? 13);
  * salada de cor e o dado, que é o ponto, fica em segundo plano. O Positron é
  * cinza e recua; o Dark Matter é o par escuro.
  * A atribuição precisa creditar OSM E CARTO.
+ *
+ * Desde set/2026 a CARTO exige chave (gratuita, pedida em
+ * carto.com/basemaps/apikey). Sem ela, todo tile vem com a marca d'água
+ * "API KEY REQUIRED" no lugar do mapa.
  */
+const TILES_KEY = import.meta.env.VITE_MAP_TILES_KEY;
+const KEY_PARAM = TILES_KEY ? `?key=${encodeURIComponent(TILES_KEY)}` : '';
 const TILES = {
-  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  light: `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png${KEY_PARAM}`,
+  dark: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png${KEY_PARAM}`,
 } as const;
 
 const ATTRIBUTION =
