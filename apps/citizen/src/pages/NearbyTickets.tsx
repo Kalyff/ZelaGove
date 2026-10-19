@@ -31,7 +31,7 @@ import { listPublicTickets } from '../lib/api';
  * prefeitura executa. Por isso a lista traz também os concluídos recentes: uma
  * lista só de problema em aberto mostra fila, não trabalho.
  *
- * O cartão é enxuto (categoria, status e local) e leva ao detalhe completo em
+ * O cartão é enxuto (título, categoria, status e local) e leva ao detalhe completo em
  * `/chamados/na-cidade/:id` — texto, foto e andamento, sem quem abriu.
  */
 export default function NearbyTickets() {
@@ -104,7 +104,8 @@ export default function NearbyTickets() {
                   <Skeleton className="h-[26px] w-28 rounded-full" />
                   <SkeletonText className="w-12" />
                 </div>
-                <SkeletonText className="mt-3 w-2/5" />
+                <SkeletonText className="mt-3 w-3/5" />
+                <SkeletonText className="mt-2 w-1/4" />
               </li>
             ))}
           </ul>
@@ -191,7 +192,8 @@ function PublicTicketCard({
         </time>
       </div>
 
-      <p className="mt-2.5 font-display font-bold text-content">{ticket.categoryLabel}</p>
+      <p className="mt-2.5 font-display font-bold text-content">{ticket.title}</p>
+      <p className="mt-0.5 text-sm text-content-secondary">{ticket.categoryLabel}</p>
 
       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
         {distance !== null && (

@@ -108,8 +108,8 @@ function publicScope(): Prisma.TicketWhereInput {
  * que segue escopado por `userId` — o isolamento continua valendo em todo o
  * resto.
  *
- * O `select` mantém a lista leve — texto e foto ficam para o detalhe — e deixa
- * `userId` no banco.
+ * O `select` mantém a lista leve — descrição e foto ficam para o detalhe — e
+ * deixa `userId` no banco.
  */
 export function listPublicTickets() {
   return prisma.ticket.findMany({
@@ -117,6 +117,7 @@ export function listPublicTickets() {
     select: {
       id: true,
       protocol: true,
+      title: true,
       category: true,
       status: true,
       latitude: true,

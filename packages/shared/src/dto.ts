@@ -75,9 +75,10 @@ export interface TimelineEventDTO {
 /**
  * Chamado de OUTRA pessoa, na LISTA "Na cidade".
  *
- * Deliberadamente magro: sem título, descrição, foto ou qualquer traço de quem
- * abriu — o texto e a foto chegam pelo detalhe (`GET /tickets/public/:id`, que
- * devolve `CitizenTicketDetailDTO`). Não é a `TicketDTO` com campos opcionais —
+ * Deliberadamente magro: título sim (é o que identifica o problema no cartão,
+ * e o detalhe já o mostra a qualquer cidadão), mas sem descrição, foto ou
+ * qualquer traço de quem abriu — o texto e a foto chegam pelo detalhe
+ * (`GET /tickets/public/:id`, que devolve `CitizenTicketDetailDTO`). Não é a `TicketDTO` com campos opcionais —
  * é outro tipo, para que nenhum cartão escreva `ticket.description` achando que
  * existe. Do lado do servidor a mesma lista de campos é a lista de permissão do
  * `select`.
@@ -85,6 +86,7 @@ export interface TimelineEventDTO {
 export interface PublicTicketDTO {
   id: string;
   protocol: string;
+  title: string;
   category: TicketCategory;
   categoryLabel: string;
   status: TicketStatus;

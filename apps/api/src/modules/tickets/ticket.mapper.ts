@@ -97,6 +97,7 @@ export async function toCitizenTicketDetailDTO(
 export function toPublicTicketDTO(ticket: {
   id: string;
   protocol: string;
+  title: string;
   category: TicketCategory;
   status: TicketStatus;
   latitude: Prisma.Decimal;
@@ -106,6 +107,7 @@ export function toPublicTicketDTO(ticket: {
   return {
     id: ticket.id,
     protocol: ticket.protocol,
+    title: ticket.title,
     category: ticket.category,
     categoryLabel: CATEGORY_LABELS[ticket.category],
     status: ticket.status,
