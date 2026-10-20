@@ -1,5 +1,5 @@
 import { IconExternal } from '@zeladoria/ui';
-import type { AgencyDTO } from '@zeladoria/shared';
+import { isWhatsAppUrl, type AgencyDTO } from '@zeladoria/shared';
 
 /**
  * O que o cidadão precisa ler quando o chamado sai da prefeitura.
@@ -66,7 +66,7 @@ export function ForwardedNotice({
               rel="noreferrer noopener"
               className="flex min-h-11 items-center justify-center rounded-field border border-line-strong px-4 text-sm font-semibold text-content"
             >
-              Abrir o site do órgão
+              {isWhatsAppUrl(agency.publicUrl) ? 'Enviar mensagem pelo WhatsApp' : 'Abrir o site do órgão'}
             </a>
           )}
         </div>

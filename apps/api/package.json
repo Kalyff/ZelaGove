@@ -9,6 +9,7 @@
     "db:setup": "prisma migrate dev --name init && tsx prisma/hardening.ts && tsx prisma/seed.ts",
     "db:seed": "tsx prisma/seed.ts",
     "create-admin": "tsx prisma/create-admin.ts",
+    "sync-agencies": "tsx prisma/sync-agencies.ts",
     "db:studio": "prisma studio",
     "test": "vitest run --dir test/unit",
     "test:integration": "vitest run --dir test/integration",

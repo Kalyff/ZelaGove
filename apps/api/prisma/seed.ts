@@ -1,6 +1,7 @@
-import { PrismaClient, type AgencyKind, type TicketCategory, type TicketStatus } from '@prisma/client';
+import { PrismaClient, type TicketCategory, type TicketStatus } from '@prisma/client';
 import { teamDispatchedNote } from '@zeladoria/shared';
 import { hashPassword } from '../src/modules/auth/password';
+import { syncAgencies } from './agencies';
 
 const prisma = new PrismaClient();
 
@@ -30,7 +31,7 @@ const SAMPLES: Array<{
   { title: 'Placa de pare derrubada', description: 'A placa caiu após o temporal e ninguém recolheu.', category: 'traffic', status: 'pending', supporters: 1 },
   { title: 'Vazamento de água na esquina', description: 'Água corrente há três dias, desperdício grande.', category: 'sanitation', status: 'in_progress', supporters: 2 },
   { title: 'Descarte irregular de entulho', description: 'Entulho de obra deixado na esquina bloqueando a calçada.', category: 'cleaning', status: 'pending', supporters: 3 },
-  { title: 'Tampa de bueiro faltando', description: 'Bueiro aberto no meio da via, sinalizado só com um galho.', category: 'sanitation', status: 'pending', supporters: 2 },
+  { title: 'Buraco na BR-364', description: 'Buraco no acostamento da BR-364, perto do anel viário. Caminhões desviam para a pista.', category: 'paving', status: 'pending', supporters: 2 },
   { title: 'Poda de árvore sobre a fiação', description: 'Galhos encostando nos fios de energia.', category: 'other', status: 'done' },
 ];
 
@@ -49,52 +50,6 @@ const NEIGHBORS = [
   'Patrícia Gomes',
 ];
 
-/**
- * Órgãos de exemplo. Os campos `public*` são o que o CIDADÃO vê quando o
- * chamado dele é encaminhado — sem eles o encaminhamento vira beco sem saída.
- *
- * Os nomes aqui são fictícios de propósito: cada município tem a sua
- * concessionária e a sua autarquia, e cravar nomes reais no seed convidaria a
- * subir isso para produção sem revisão.
- */
-const AGENCIES: Array<{
-  name: string;
-  kind: AgencyKind;
-  publicPhone?: string;
-  publicUrl?: string;
-  publicNote?: string;
-}> = [
-  {
-    name: 'Concessionária de Energia',
-    kind: 'concessionaria',
-    publicPhone: '0800 000 0000',
-    publicUrl: 'https://exemplo.com.br/atendimento',
-    publicNote: 'Rede elétrica, postes e iluminação alimentada pela distribuidora.',
-  },
-  {
-    name: 'Companhia de Saneamento',
-    kind: 'concessionaria',
-    publicPhone: '0800 000 0001',
-    publicNote: 'Água tratada e esgoto até o cavalete do imóvel.',
-  },
-  {
-    name: 'DNIT — Superintendência Regional',
-    kind: 'federal',
-    publicUrl: 'https://www.gov.br/dnit',
-    publicNote: 'Rodovias federais (BR-) e suas faixas de domínio.',
-  },
-  {
-    name: 'Departamento Estadual de Estradas',
-    kind: 'estadual',
-    publicNote: 'Rodovias estaduais.',
-  },
-  {
-    name: 'Secretaria Municipal de Meio Ambiente',
-    kind: 'secretaria',
-    publicNote: 'Arborização urbana e licenciamento — outra pasta da prefeitura.',
-  },
-];
-
 async function main() {
   console.log('Limpando dados...');
   // TRUNCATE em vez de deleteMany: o trigger append-only bloqueia DELETE em
@@ -105,7 +60,8 @@ async function main() {
   );
 
   console.log('Criando órgãos externos...');
-  await prisma.agency.createMany({ data: AGENCIES });
+  // A mesma lista e o mesmo caminho do `sync-agencies` de produção.
+  await syncAgencies(prisma);
 
   const password = await hashPassword('senha123');
 

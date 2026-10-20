@@ -82,8 +82,10 @@ npm run dev --workspace @zeladoria/admin
 | Cidadão | `joao@email.com` |
 | Cidadão | `ana@email.com` |
 
-O seed também cadastra os órgãos externos usados no encaminhamento e seis
-vizinhos (`vizinho1@email.com` a `vizinho6@email.com`, mesma senha) que só
+O seed também cadastra os órgãos de fora da prefeitura usados no encaminhamento
+(DNIT, PRF, IBAMA, DERACRE, DETRAN/AC, BPTRAN, IMAC e Energisa, com os
+contatos públicos)
+e seis vizinhos (`vizinho1@email.com` a `vizinho6@email.com`, mesma senha) que só
 existem para dar "eu também vi isso" aos chamados de exemplo.
 
 Fora do desenvolvimento não existe seed. O cidadão se cadastra sozinho, pela
@@ -99,6 +101,14 @@ npm run create-admin --workspace @zeladoria/api -- \
 A senha é pedida em seguida, sem eco — nunca como argumento, que ficaria no
 histórico do shell e apareceria num `ps`. O script recusa e-mail já existente:
 ele cria contas, não redefine senha.
+
+Os órgãos de encaminhamento também não chegam sozinhos fora do desenvolvimento.
+Este comando os grava sem apagar nada, e pode ser repetido depois de corrigir um
+contato em `apps/api/prisma/agencies.ts`:
+
+```bash
+npm run sync-agencies --workspace @zeladoria/api
+```
 
 ### Testando no celular
 

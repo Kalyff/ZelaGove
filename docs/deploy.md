@@ -96,6 +96,23 @@ echo -n "$SENHA" | npx tsx prisma/create-admin.ts --email a@b.gov.br --nome "Ful
 
 O script recusa e-mail que já existe: ele cria contas, não redefine senha.
 
+## Os órgãos de encaminhamento
+
+Instalação nova também não tem nenhum órgão, e sem eles o gestor não encaminha
+chamado nenhum — o seletor do painel fica vazio. A lista (DNIT, PRF, IBAMA,
+DERACRE, DETRAN/AC, BPTRAN, IMAC e Energisa, com os contatos públicos) mora em
+`apps/api/prisma/agencies.ts`, e o `sync-agencies` a grava sem apagar nada:
+
+```bash
+docker compose -f docker-compose.prod.yml exec api npx tsx prisma/sync-agencies.ts
+```
+
+Cria o que falta e atualiza o que mudou, casando pelo nome; rodar de novo é
+seguro. Para corrigir um telefone, edite `agencies.ts`, reconstrua a imagem da
+API e rode o comando outra vez — o órgão é atualizado no mesmo registro, e os
+chamados já encaminhados continuam ligados a ele. O script não apaga órgão fora
+da lista nem reativa órgão desativado.
+
 ## O que ainda falta para valer como produção
 
 Ver [limitacoes.md](limitacoes.md). Em resumo: não há cadastro de cidadão pela

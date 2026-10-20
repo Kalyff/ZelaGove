@@ -38,9 +38,22 @@ export function forwardedNotice(agency: {
   publicPhone?: string | null;
   publicUrl?: string | null;
 }): string {
-  const onde = [agency.publicPhone, agency.publicUrl].filter(Boolean).join(' · ');
   const base = `Este chamado é de responsabilidade de ${agency.name}.`;
-  return onde ? `${base} Acompanhe em ${onde}.` : base;
+  // Link `wa.me` cru não diz nada a quem lê: vira "WhatsApp".
+  const url =
+    agency.publicUrl && isWhatsAppUrl(agency.publicUrl) ? 'WhatsApp' : agency.publicUrl;
+  const onde = [agency.publicPhone, url].filter(Boolean).join(' · ');
+  return onde ? `${base} Acompanhe em: ${onde}.` : base;
+}
+
+/**
+ * Órgão que só atende por mensagem (o IMAC, por exemplo) tem como contato um
+ * link `wa.me`, e não um telefone: o botão "Ligar" discaria para um número que
+ * não atende. Quem mostra o contato usa isto para dizer "WhatsApp", e não
+ * "site".
+ */
+export function isWhatsAppUrl(url: string): boolean {
+  return /^https:\/\/wa\.me\//.test(url);
 }
 
 export const AGENCY_KIND_LABELS: Record<AgencyKind, string> = {
@@ -56,25 +69,33 @@ export const AGENCY_KIND_LABELS: Record<AgencyKind, string> = {
  * Sugestão de para ONDE costuma ir cada categoria — por TIPO de órgão, nunca
  * por órgão nomeado.
  *
- * O nome do órgão é dado, e varia a cada município: a distribuidora de energia
- * de um não é a do vizinho. Fixar nomes aqui faria a sugestão nascer errada em
- * todo lugar menos no seed. O tipo, ao contrário, é estável — poste apagado é
- * concessionária em qualquer lugar do país.
+ * O nome do órgão é dado e fica no cadastro: fixá-lo aqui faria a sugestão
+ * nascer errada no dia em que um órgão mudar de nome. O tipo segue a
+ * jurisdição do local, que é o que decide a competência em Rio Branco: o
+ * problema que sai da malha urbana para uma rodovia federal é do DNIT, da PRF
+ * ou do IBAMA; numa rodovia estadual, do DERACRE, do DETRAN/BPTRAN ou do IMAC.
+ *  - pavimentação e limpeza (roçagem, sarjetas, bueiros de rodovia): DNIT ou
+ *    DERACRE;
+ *  - trânsito: PRF nas BRs, DETRAN e BPTRAN nas ACs;
+ *  - saneamento que vira crime ambiental (esgoto em igarapé, lixão
+ *    clandestino): IMAC ou IBAMA — a água e o esgoto da cidade são do SAERB,
+ *    que é da própria prefeitura;
+ *  - iluminação: DNIT ou DERACRE em entroncamento e anel viário fora do
+ *    perímetro urbano; poste caído e fio partido da rede elétrica, a Energisa.
  *
  * É SUGESTÃO, não decisão: a interface destaca os órgãos desse tipo e não
- * pré-seleciona nenhum. Categoria não determina competência — buraco na via
- * pode ser da prefeitura, do DNIT ou do DER, e quem sabe é quem tem o
- * organograma na mão.
+ * pré-seleciona nenhum. Categoria não determina competência — o mesmo buraco é
+ * da EMURB no bairro e do DNIT na BR-364, e quem sabe é quem conhece o local.
  *
  * Lista vazia significa "não há palpite" — e isso é um resultado válido, bem
  * melhor que um palpite inventado.
  */
 export const SUGGESTED_AGENCY_KINDS: Record<TicketCategory, AgencyKind[]> = {
-  lighting: ['concessionaria'],
+  lighting: ['federal', 'estadual', 'concessionaria'],
   paving: ['federal', 'estadual'],
-  sanitation: ['concessionaria', 'consorcio'],
+  sanitation: ['estadual', 'federal'],
   traffic: ['federal', 'estadual'],
-  cleaning: ['consorcio', 'secretaria'],
+  cleaning: ['federal', 'estadual'],
   other: [],
 };
 
