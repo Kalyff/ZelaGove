@@ -82,7 +82,9 @@ npm run dev --workspace @zeladoria/admin
 | Cidadão | `joao@email.com` |
 | Cidadão | `ana@email.com` |
 
-O seed também cadastra os órgãos externos usados no encaminhamento.
+O seed também cadastra os órgãos externos usados no encaminhamento e seis
+vizinhos (`vizinho1@email.com` a `vizinho6@email.com`, mesma senha) que só
+existem para dar "eu também vi isso" aos chamados de exemplo.
 
 Fora do desenvolvimento não existe seed. O cidadão se cadastra sozinho, pela
 própria tela de login do app. Já o gestor é provisionado — `/auth/register` cria

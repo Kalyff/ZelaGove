@@ -56,4 +56,8 @@ export const Errors = {
     new AppError(422, 'EMAIL_ALREADY_REGISTERED', 'Este e-mail já tem cadastro. Entre com ele.', 'email'),
   notForwarded: () =>
     new AppError(422, 'NOT_FORWARDED', 'Só é possível anotar protocolo externo em chamado encaminhado.', 'externalProtocol'),
+  cannotSupportOwnTicket: () =>
+    new AppError(422, 'OWN_TICKET', 'Este chamado é seu. O apoio é para quem viu o problema de outra pessoa.'),
+  ticketAlreadyDone: () =>
+    new AppError(422, 'TICKET_ALREADY_DONE', 'Este chamado já foi concluído.'),
 };

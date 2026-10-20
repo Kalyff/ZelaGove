@@ -3,10 +3,19 @@ import {
   BOARD_STATUSES,
   STATUS_LABELS_ADMIN,
   dateTime,
+  supportLabel,
   type TicketDTO,
   type TicketStatus,
 } from '@zeladoria/shared';
-import { IconExternal, IconGrip, STATUS_HEX, STATUS_HEX_DARK, cn, useTheme } from '@zeladoria/ui';
+import {
+  IconExternal,
+  IconEye,
+  IconGrip,
+  STATUS_HEX,
+  STATUS_HEX_DARK,
+  cn,
+  useTheme,
+} from '@zeladoria/ui';
 import { m } from 'framer-motion';
 
 export function KanbanCard({
@@ -103,9 +112,19 @@ export function KanbanCard({
             className="mt-2.5 h-24 w-full rounded-field bg-surface-sunken object-cover"
           />
         )}
-        <p className="mt-2.5 font-mono text-[10px] text-content-tertiary">
-          {dateTime(ticket.createdAt)}
-        </p>
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <p className="font-mono text-[10px] text-content-tertiary">
+            {dateTime(ticket.createdAt)}
+          </p>
+          {/* Cidadãos que confirmaram em vez de abrir um duplicado: é o sinal
+              de prioridade que o quadro não teria de outro jeito. */}
+          {ticket.supportCount > 0 && (
+            <p className="flex items-center gap-1 text-[11px] font-semibold text-accent">
+              <IconEye className="h-3.5 w-3.5" />
+              {supportLabel(ticket.supportCount)}
+            </p>
+          )}
+        </div>
       </button>
 
       {/* Alternativa ao drag-and-drop: cumpre a mesma regra de negócio e é

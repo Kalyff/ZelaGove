@@ -4,6 +4,7 @@ import type {
   PublicTicketListDTO,
   TicketDTO,
   TicketListDTO,
+  TicketSupportDTO,
 } from '@zeladoria/shared';
 
 /**
@@ -46,4 +47,14 @@ export function getPublicTicket(id: string): Promise<CitizenTicketDetailDTO> {
 
 export function createTicket(form: FormData): Promise<TicketDTO> {
   return client.request('/tickets', { method: 'POST', body: form });
+}
+
+/** "Eu também vi isso" num chamado de outra pessoa. Idempotente. */
+export function supportTicket(id: string): Promise<TicketSupportDTO> {
+  return client.request(`/tickets/public/${id}/support`, { method: 'POST' });
+}
+
+/** Desfaz o apoio. Idempotente. */
+export function withdrawSupport(id: string): Promise<TicketSupportDTO> {
+  return client.request(`/tickets/public/${id}/support`, { method: 'DELETE' });
 }

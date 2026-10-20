@@ -31,6 +31,19 @@ export const BOARD_STATUSES = ['pending', 'in_progress', 'done'] as const;
 export type BoardStatus = (typeof BOARD_STATUSES)[number];
 
 /**
+ * Os status que aceitam "eu também vi isso": o problema ainda está na rua.
+ *
+ * Concluído não — um apoio novo diria que ele continua lá. Encaminhado nem
+ * chega a ser visível a outro cidadão (ver `publicScope` na API). A API recusa
+ * o resto; o app usa a mesma regra para nem oferecer o botão.
+ */
+export const SUPPORTABLE_STATUSES = ['pending', 'in_progress'] as const;
+
+export function acceptsSupport(status: TicketStatus): boolean {
+  return (SUPPORTABLE_STATUSES as readonly TicketStatus[]).includes(status);
+}
+
+/**
  * O que um evento da linha do tempo registra: `status` é transição (ou a
  * abertura, encaminhamento, protocolo); `note` é observação do gestor, que
  * carrega o status vigente sem mudá-lo.

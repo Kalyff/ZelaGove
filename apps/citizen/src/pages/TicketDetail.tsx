@@ -12,6 +12,7 @@ import {
 import { coords } from '@zeladoria/shared';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ForwardedNotice } from '../components/ForwardedNotice';
+import { SupportPanel } from '../components/SupportPanel';
 import { Timeline } from '../components/Timeline';
 import { getPublicTicket, getTicket } from '../lib/api';
 
@@ -159,6 +160,8 @@ export default function TicketDetail({ source }: { source: keyof typeof SOURCES 
                   externalProtocol={externalProtocol}
                 />
               )}
+
+              <SupportPanel ticket={ticket} queryKey={[queryKey, id]} />
 
               <section className="rounded-card bg-surface-sunken px-4 py-3">
                 <h3 className="font-display text-[11px] font-bold uppercase tracking-[0.12em] text-content-secondary">

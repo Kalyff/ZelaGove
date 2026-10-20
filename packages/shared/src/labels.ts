@@ -113,6 +113,14 @@ export function teamDispatchedNote(category: TicketCategory): string {
   return `Equipe ${CATEGORY_TEAMS[category]} acionada.`;
 }
 
+/**
+ * Quantos "eu também vi isso" um chamado tem, dito por extenso — a mesma frase
+ * no app do cidadão e no painel, para os dois lerem o número do mesmo jeito.
+ */
+export function supportLabel(count: number): string {
+  return count === 1 ? '1 pessoa também viu' : `${count} pessoas também viram`;
+}
+
 export function statusLabel(status: TicketStatus, audience: 'citizen' | 'admin'): string {
   return audience === 'citizen' ? STATUS_LABELS_CITIZEN[status] : STATUS_LABELS_ADMIN[status];
 }

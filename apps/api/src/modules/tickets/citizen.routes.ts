@@ -7,6 +7,7 @@ import {
   toPublicTicketDTO,
   toTicketDTO,
   toTicketListDTO,
+  toTicketSupportDTO,
 } from './ticket.mapper';
 import {
   getCitizenTicket,
@@ -14,7 +15,7 @@ import {
   listCitizenTickets,
   listPublicTickets,
 } from './ticket.queries';
-import { createTicket } from './ticket.service';
+import { createTicket, supportTicket, withdrawSupport } from './ticket.service';
 import { photoUpload, savePhotoIfPresent } from './upload';
 
 export const citizenTicketRoutes = Router();
@@ -68,8 +69,29 @@ citizenTicketRoutes.get(
 citizenTicketRoutes.get(
   '/public/:id',
   asyncHandler(async (req, res) => {
-    const ticket = await getPublicTicket(req.params.id);
-    res.json(await toCitizenTicketDetailDTO(ticket));
+    const ticket = await getPublicTicket(req.params.id, req.user!.id);
+    res.json(await toCitizenTicketDetailDTO(ticket, req.user!.id));
+  })
+);
+
+/**
+ * "Eu também vi isso" — apoiar (POST) e desfazer (DELETE) um chamado da lista
+ * "Na cidade". Os dois são idempotentes e devolvem a contagem nova; as regras
+ * (não o próprio, não concluído, só o que está na lista) moram no service.
+ */
+citizenTicketRoutes.post(
+  '/public/:id/support',
+  asyncHandler(async (req, res) => {
+    const count = await supportTicket(req.params.id, req.user!.id);
+    res.json(toTicketSupportDTO(count, true));
+  })
+);
+
+citizenTicketRoutes.delete(
+  '/public/:id/support',
+  asyncHandler(async (req, res) => {
+    const count = await withdrawSupport(req.params.id, req.user!.id);
+    res.json(toTicketSupportDTO(count, false));
   })
 );
 
@@ -77,6 +99,6 @@ citizenTicketRoutes.get(
   '/:id',
   asyncHandler(async (req, res) => {
     const ticket = await getCitizenTicket(req.user!.id, req.params.id);
-    res.json(await toCitizenTicketDetailDTO(ticket));
+    res.json(await toCitizenTicketDetailDTO(ticket, req.user!.id));
   })
 );

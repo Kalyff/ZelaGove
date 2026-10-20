@@ -89,6 +89,7 @@ describe('lista pública de chamados', () => {
       'protocol',
       'status',
       'statusLabel',
+      'supportCount',
       'title',
     ].sort());
   });

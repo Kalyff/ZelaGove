@@ -40,6 +40,8 @@ pessoa sem saber por que o cadastro falhou.
 | POST | `/tickets` | multipart, foto opcional de até 5 MB |
 | GET | `/tickets/public` | chamados de TODOS, em projeção reduzida |
 | GET | `/tickets/public/:id` | detalhe de um chamado da lista pública, sem o solicitante |
+| POST | `/tickets/public/:id/support` | "eu também vi isso"; idempotente |
+| DELETE | `/tickets/public/:id/support` | desfaz o apoio; idempotente |
 | GET | `/tickets/:id` | escopado por `userId`; chamado alheio responde 404 |
 
 `/tickets/public` e `/tickets/public/:id` são a aba "Na cidade" e as únicas rotas
@@ -50,6 +52,16 @@ nenhuma das duas carrega nome, e-mail ou `userId` de quem abriu. As duas seguem 
 mesma regra de visibilidade (`publicScope`): pendente, em andamento ou concluído
 há até 30 dias, nunca encaminhado; fora dela o detalhe responde 404. Exigem estar
 autenticado como cidadão.
+
+O **apoio** ("eu também vi isso") é a alternativa a abrir um chamado duplicado:
+vinte avisos do mesmo problema viram um chamado com `supportCount: 20`, número
+que o gestor vê no quadro e no detalhe. Segue a mesma `publicScope` (fora dela,
+404) e recusa com 422 o próprio chamado (`OWN_TICKET`) e o concluído
+(`TICKET_ALREADY_DONE`). Um apoio por pessoa, garantido pela chave primária de
+`ticket_supports`; os dois verbos devolvem `{ supportCount, supportedByMe }`.
+Apoio não gera evento na linha do tempo nem mexe em `updatedAt`. O detalhe do
+cidadão traz `isMine` e `supportedByMe` — do ponto de vista de quem vê, nunca
+de quem abriu —, que é o que a tela usa para oferecer ou não o botão.
 
 ## Painel (admin)
 

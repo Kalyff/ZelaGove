@@ -3,6 +3,7 @@ import {
   Button,
   ErrorState,
   Field,
+  IconEye,
   IconPin,
   IconUser,
   Modal,
@@ -12,7 +13,7 @@ import {
   Textarea,
   useToast,
 } from '@zeladoria/ui';
-import { coords, dateTime } from '@zeladoria/shared';
+import { coords, dateTime, supportLabel } from '@zeladoria/shared';
 import { useState } from 'react';
 import { addNote, getTicket } from '../lib/api';
 import { invalidateTicketViews, queryKeys } from '../lib/queryKeys';
@@ -95,6 +96,12 @@ export function TicketModal({
               <p className="mt-2 text-xs text-content-tertiary">
                 Aberto em {dateTime(ticket.createdAt)}
               </p>
+              {ticket.supportCount > 0 && (
+                <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-accent">
+                  <IconEye className="h-4 w-4" />
+                  {supportLabel(ticket.supportCount)} este problema pelo app
+                </p>
+              )}
             </div>
 
             {ticket.photoUrl && (

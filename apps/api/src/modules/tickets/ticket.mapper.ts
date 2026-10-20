@@ -8,6 +8,7 @@ import {
   type TicketCategory,
   type TicketDTO,
   type TicketStatus,
+  type TicketSupportDTO,
   type TimelineEventDTO,
 } from '@zeladoria/shared';
 import { photoStorage } from '../../infra/storage';
@@ -27,7 +28,17 @@ import { toAgencyDTO } from '../agencies/agency.mapper';
 type Audience = 'citizen' | 'admin';
 
 type EventWithAgency = TicketEvent & { agency?: Agency | null };
-type TicketWithAgency = Ticket & { forwardedTo?: Agency | null };
+
+/**
+ * `_count.supports` é OBRIGATÓRIO: toda leitura que chega aqui precisa ter
+ * usado `ticketForDTO` (ou algo que o contenha). Opcional com padrão zero, o
+ * esquecimento viraria um "ninguém mais viu isso" falso em vez de um erro de
+ * compilação.
+ */
+type TicketWithAgency = Ticket & {
+  forwardedTo?: Agency | null;
+  _count: { supports: number };
+};
 
 /**
  * Os rótulos são resolvidos aqui, na borda. O enum viaja junto para que o
@@ -52,6 +63,7 @@ export async function toTicketDTO(
     latitude: Number(ticket.latitude),
     longitude: Number(ticket.longitude),
     photoUrl: await photoStorage.urlFor(ticket.photoKey),
+    supportCount: ticket._count.supports,
     createdAt: ticket.createdAt.toISOString(),
     updatedAt: ticket.updatedAt.toISOString(),
   };
@@ -71,14 +83,25 @@ export async function toTicketListDTO(
  *
  * Requisito 4.2: a timeline completa, inclusive notas e fotos do gestor.
  * Transparência é funcionalidade, não vazamento.
+ *
+ * `ticket.userId` é lido aqui só para virar `isMine` do ponto de vista de quem
+ * está vendo — o id em si não sai. `supports` chega já filtrado por
+ * `viewerId` na query: vazio ou com o apoio dele.
  */
 export async function toCitizenTicketDetailDTO(
-  ticket: TicketWithAgency & { events: EventWithAgency[] }
+  ticket: TicketWithAgency & { events: EventWithAgency[]; supports: unknown[] },
+  viewerId: string
 ): Promise<CitizenTicketDetailDTO> {
   return {
     ...(await toTicketDTO(ticket, 'citizen')),
     timeline: await toTimelineDTO(ticket.events, 'citizen'),
+    isMine: ticket.userId === viewerId,
+    supportedByMe: ticket.supports.length > 0,
   };
+}
+
+export function toTicketSupportDTO(supportCount: number, supportedByMe: boolean): TicketSupportDTO {
+  return { supportCount, supportedByMe };
 }
 
 /**
@@ -103,6 +126,7 @@ export function toPublicTicketDTO(ticket: {
   latitude: Prisma.Decimal;
   longitude: Prisma.Decimal;
   createdAt: Date;
+  _count: { supports: number };
 }): PublicTicketDTO {
   return {
     id: ticket.id,
@@ -114,6 +138,7 @@ export function toPublicTicketDTO(ticket: {
     statusLabel: statusLabel(ticket.status, 'citizen'),
     latitude: Number(ticket.latitude),
     longitude: Number(ticket.longitude),
+    supportCount: ticket._count.supports,
     createdAt: ticket.createdAt.toISOString(),
   };
 }

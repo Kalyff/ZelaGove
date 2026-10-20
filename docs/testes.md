@@ -24,6 +24,7 @@ derruba a aplicação, só entrega dado de um cidadão para outro.
 | `apps/api/test/integration/registration.test.ts` | Cadastro de cidadão — inclusive que `role` no corpo é ignorado |
 | `apps/api/test/integration/forwarding.test.ts` | Encaminhamento de chamados |
 | `apps/api/test/integration/ticket-notes.test.ts` | Observação do gestor entra na linha do tempo sem mudar o status |
+| `apps/api/test/integration/ticket-supports.test.ts` | "Eu também vi isso": conta pessoas e não toques, recusa o próprio chamado e o concluído, e o gestor vê o número |
 | `apps/api/test/integration/public-feed.test.ts` | Lista e detalhe de "Na cidade" — mesma forma do detalhe do autor, sem identidade |
 | `packages/shared/test/distance.test.ts` | Cálculo de distância |
 | `packages/shared/test/format.test.ts` | Data, coordenada e nome — formatação compartilhada pelos dois apps |

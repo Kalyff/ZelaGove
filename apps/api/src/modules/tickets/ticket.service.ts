@@ -1,5 +1,6 @@
-import type { Prisma, Ticket } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import {
+  acceptsSupport,
   teamDispatchedNote,
   type AddTicketNoteInput,
   type AppendExternalProtocolInput,
@@ -9,6 +10,7 @@ import {
 } from '@zeladoria/shared';
 import { Errors } from '../../http/errors';
 import { prisma } from '../../infra/prisma';
+import { publicScope, ticketForDTO } from './ticket.queries';
 
 /**
  * COMANDOS de chamado — tudo o que escreve.
@@ -44,7 +46,7 @@ export async function createTicket(
   userId: string,
   input: CreateTicketInput,
   photoKey: string | null
-): Promise<Ticket> {
+) {
   return prisma.$transaction(async (tx) => {
     const protocol = await nextProtocol(tx);
 
@@ -60,6 +62,7 @@ export async function createTicket(
         photoKey,
         status: 'pending', // Requisito 4.1: todo chamado nasce Pendente.
       },
+      include: ticketForDTO,
     });
 
     // Requisito 4.2: o primeiro evento é automático.
@@ -113,7 +116,7 @@ export async function updateTicketStatus(
          */
         forwardedToId: null,
       },
-      include: { forwardedTo: true },
+      include: ticketForDTO,
     });
 
     await tx.ticketEvent.create({
@@ -166,7 +169,7 @@ export async function forwardTicket(
       /* Sem o include, a resposta sai com `forwardedTo: null` e quem chamou não
          sabe para onde acabou de encaminhar — o painel anunciaria um
          encaminhamento sem destino logo depois de exigir um. */
-      include: { forwardedTo: true },
+      include: ticketForDTO,
     });
 
     await tx.ticketEvent.create({
@@ -216,7 +219,7 @@ export async function appendExternalProtocol(
     return tx.ticket.update({
       where: { id: ticketId },
       data: {},
-      include: { forwardedTo: true },
+      include: ticketForDTO,
     });
   });
 }
@@ -252,7 +255,59 @@ export async function addTicketNote(
     return tx.ticket.update({
       where: { id: ticketId },
       data: {},
-      include: { forwardedTo: true },
+      include: ticketForDTO,
     });
+  });
+}
+
+/**
+ * "Eu também vi isso": o cidadão confirma o chamado de outra pessoa em vez de
+ * abrir um duplicado. Devolve a contagem nova.
+ *
+ * Só se apoia o que se consegue ver (`publicScope`): fora dele, 404 — igual ao
+ * detalhe. Dentro dele, duas recusas com motivo:
+ *  - o próprio chamado — apoio é o sinal de que OUTRA pessoa também foi afetada;
+ *    contar o autor transformaria o número em "1 + quantos mais";
+ *  - concluído — o problema já foi resolvido, e um apoio novo diria o contrário.
+ *
+ * Idempotente: apoiar de novo não conta de novo. `skipDuplicates` vira
+ * `ON CONFLICT DO NOTHING`, então nem dois toques simultâneos esbarram na chave
+ * primária.
+ *
+ * Não mexe em `updatedAt` nem gera evento: apoio não é andamento do chamado.
+ */
+export async function supportTicket(ticketId: string, userId: string): Promise<number> {
+  return prisma.$transaction(async (tx) => {
+    const ticket = await tx.ticket.findFirst({
+      where: { id: ticketId, ...publicScope() },
+      select: { userId: true, status: true },
+    });
+    if (!ticket) throw Errors.ticketNotFound();
+    if (ticket.userId === userId) throw Errors.cannotSupportOwnTicket();
+    // `publicScope` já tirou o encaminhado: o que sobra recusado é concluído.
+    if (!acceptsSupport(ticket.status)) throw Errors.ticketAlreadyDone();
+
+    await tx.ticketSupport.createMany({ data: [{ ticketId, userId }], skipDuplicates: true });
+    return tx.ticketSupport.count({ where: { ticketId } });
+  });
+}
+
+/**
+ * Desfaz o apoio — o toque por engano precisa de volta. Idempotente como o
+ * apoio: retirar o que não existe só devolve a contagem.
+ *
+ * Mesma regra de visibilidade, mas sem recusar concluído: retirar não afirma
+ * nada sobre o problema.
+ */
+export async function withdrawSupport(ticketId: string, userId: string): Promise<number> {
+  return prisma.$transaction(async (tx) => {
+    const ticket = await tx.ticket.findFirst({
+      where: { id: ticketId, ...publicScope() },
+      select: { id: true },
+    });
+    if (!ticket) throw Errors.ticketNotFound();
+
+    await tx.ticketSupport.deleteMany({ where: { ticketId, userId } });
+    return tx.ticketSupport.count({ where: { ticketId } });
   });
 }

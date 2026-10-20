@@ -54,6 +54,11 @@ export interface TicketDTO {
    * lá que ele precisa ser lido.
    */
   forwardedTo: AgencyDTO | null;
+  /**
+   * Quantos OUTROS cidadãos disseram "eu também vi isso". O autor não conta:
+   * não pode apoiar o próprio chamado.
+   */
+  supportCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -93,6 +98,8 @@ export interface PublicTicketDTO {
   statusLabel: string;
   latitude: number;
   longitude: number;
+  /** Entra no cartão: é o que diz "isso já foi avisado, e por muita gente". */
+  supportCount: number;
   createdAt: string;
 }
 
@@ -129,11 +136,26 @@ export interface MetricsDTO {
  */
 export interface CitizenTicketDetailDTO extends TicketDTO {
   timeline: TimelineEventDTO[];
+  /**
+   * Os dois campos abaixo são do ponto de vista de QUEM ESTÁ VENDO, nunca de
+   * quem abriu: dizem a você se o chamado é seu e se você já o apoiou. É o que
+   * a tela precisa para oferecer — ou não — o "eu também vi isso", já que a
+   * lista "Na cidade" inclui os chamados do próprio cidadão.
+   */
+  isMine: boolean;
+  supportedByMe: boolean;
 }
 
 /** Requisito 3.2.6: o gestor vê também nome e e-mail do solicitante. */
-export interface AdminTicketDetailDTO extends CitizenTicketDetailDTO {
+export interface AdminTicketDetailDTO extends TicketDTO {
+  timeline: TimelineEventDTO[];
   citizen: { id: string; name: string; email: string };
+}
+
+/** Resposta de apoiar ou retirar o apoio: o que o botão precisa para se redesenhar. */
+export interface TicketSupportDTO {
+  supportCount: number;
+  supportedByMe: boolean;
 }
 
 /** Listagem sem paginação (app do cidadão). */

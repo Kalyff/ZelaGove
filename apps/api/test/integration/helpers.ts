@@ -44,7 +44,7 @@ export async function resetDatabase() {
   // porque `vitest.config.ts` fixa `fileParallelism: false`: os arquivos rodam
   // em série contra o mesmo banco.
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE ticket_events, tickets, ticket_counters, agencies, users RESTART IDENTITY CASCADE'
+    'TRUNCATE TABLE ticket_supports, ticket_events, tickets, ticket_counters, agencies, users RESTART IDENTITY CASCADE'
   );
 }
 
@@ -57,7 +57,7 @@ export async function resetDatabase() {
  */
 export async function truncateTickets() {
   assertTestDatabase();
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE ticket_events, tickets RESTART IDENTITY CASCADE');
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE ticket_supports, ticket_events, tickets RESTART IDENTITY CASCADE');
 }
 
 export async function createUser(role: 'citizen' | 'admin', email: string, name = 'Fulano de Tal') {

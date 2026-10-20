@@ -1,6 +1,7 @@
 import { TICKET_STATUSES, type MetricsDTO, type TicketStatus } from '@zeladoria/shared';
 import { prisma } from '../../infra/prisma';
 import { toTicketListDTO } from '../tickets/ticket.mapper';
+import { ticketForDTO } from '../tickets/ticket.queries';
 
 /** Quantos chamados mais recentes a visão geral mostra (requisito 3.2.3). */
 const RECENT_LIMIT = 5;
@@ -14,7 +15,11 @@ export async function getMetrics(): Promise<MetricsDTO> {
   const [grouped, total, recent] = await Promise.all([
     prisma.ticket.groupBy({ by: ['status'], _count: { _all: true } }),
     prisma.ticket.count(),
-    prisma.ticket.findMany({ orderBy: { createdAt: 'desc' }, take: RECENT_LIMIT }),
+    prisma.ticket.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: RECENT_LIMIT,
+      include: ticketForDTO,
+    }),
   ]);
 
   const byStatus = Object.fromEntries(grouped.map((g) => [g.status, g._count._all]));

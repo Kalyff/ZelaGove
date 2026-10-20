@@ -70,7 +70,8 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   tickets     Ticket[]
-  actedEvents TicketEvent[] @relation("EventActor")
+  actedEvents TicketEvent[]   @relation("EventActor")
+  supports    TicketSupport[]
 
   @@map("users")
 }
@@ -96,9 +97,10 @@ model Ticket {
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user        User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  forwardedTo Agency?       @relation("TicketForwardedTo", fields: [forwardedToId], references: [id], onDelete: Restrict)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  forwardedTo Agency?         @relation("TicketForwardedTo", fields: [forwardedToId], references: [id], onDelete: Restrict)
   events      TicketEvent[]
+  supports    TicketSupport[]
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([status])
@@ -133,6 +135,27 @@ model TicketEvent {
 
   @@index([ticketId, createdAt(sort: Desc)])
   @@map("ticket_events")
+}
+
+/// "Eu também vi isso": um cidadão confirma o chamado que OUTRA pessoa abriu,
+/// em vez de abrir um duplicado. Vinte avisos do mesmo buraco viram um chamado
+/// com vinte apoios — para a prefeitura, prioridade em vez de fila.
+///
+/// Um apoio por pessoa por chamado, e quem garante é a chave primária, não o
+/// código: dois toques simultâneos no botão não contam duas vezes.
+///
+/// Não é evento da linha do tempo de propósito: a timeline conta o que a
+/// prefeitura fez, e cem apoios a afogariam.
+model TicketSupport {
+  ticketId  String   @map("ticket_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([ticketId, userId])
+  @@map("ticket_supports")
 }
 
 /// Órgão externo para onde um chamado pode ser encaminhado.

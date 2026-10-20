@@ -3,12 +3,14 @@ import {
   distanceBetween,
   formatDistance,
   shortDate,
+  supportLabel,
   type PublicTicketDTO,
 } from '@zeladoria/shared';
 import {
   Button,
   EmptyState,
   ErrorState,
+  IconEye,
   IconMap,
   IconPin,
   Skeleton,
@@ -32,7 +34,8 @@ import { listPublicTickets } from '../lib/api';
  * lista só de problema em aberto mostra fila, não trabalho.
  *
  * O cartão é enxuto (título, categoria, status e local) e leva ao detalhe completo em
- * `/chamados/na-cidade/:id` — texto, foto e andamento, sem quem abriu.
+ * `/chamados/na-cidade/:id` — texto, foto e andamento, sem quem abriu. É lá que
+ * fica o "eu também vi isso", a alternativa a abrir um chamado duplicado.
  */
 export default function NearbyTickets() {
   const { announce } = useAnnouncer();
@@ -200,6 +203,12 @@ function PublicTicketCard({
           <span className="flex items-center gap-1 text-sm text-content-secondary">
             <IconPin className="h-3.5 w-3.5 text-accent" />
             {formatDistance(distance)} de você
+          </span>
+        )}
+        {ticket.supportCount > 0 && (
+          <span className="flex items-center gap-1 text-sm text-content-secondary">
+            <IconEye className="h-3.5 w-3.5 text-accent" />
+            {supportLabel(ticket.supportCount)}
           </span>
         )}
         <span className="font-mono text-[11px] text-content-tertiary">{ticket.protocol}</span>

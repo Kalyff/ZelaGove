@@ -4,6 +4,7 @@ import {
   STATUS_LABELS_ADMIN,
   STATUS_LABELS_CITIZEN,
   statusLabel,
+  supportLabel,
   teamDispatchedNote,
 } from '../src/labels';
 
@@ -26,6 +27,13 @@ describe('rótulos de status', () => {
       expect(statusLabel(status, 'citizen')).toBeTruthy();
       expect(statusLabel(status, 'admin')).toBeTruthy();
     }
+  });
+});
+
+describe('apoios', () => {
+  it('concorda o verbo com a quantidade', () => {
+    expect(supportLabel(1)).toBe('1 pessoa também viu');
+    expect(supportLabel(4)).toBe('4 pessoas também viram');
   });
 });
 

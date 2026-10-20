@@ -17,19 +17,36 @@ const SAMPLES: Array<{
   description: string;
   category: TicketCategory;
   status: TicketStatus;
+  /** Quantos vizinhos dizem "eu também vi isso". Só em chamado aberto — concluído não aceita apoio. */
+  supporters?: number;
 }> = [
-  { title: 'Buraco na via', description: 'Buraco grande na pista, já causou dano em dois carros.', category: 'paving', status: 'pending' },
-  { title: 'Poste apagado há uma semana', description: 'A rua inteira ficou escura, moradores evitam sair à noite.', category: 'lighting', status: 'in_progress' },
-  { title: 'Semáforo piscando em amarelo', description: 'Cruzamento movimentado, risco de acidente no horário de pico.', category: 'traffic', status: 'pending' },
+  { title: 'Buraco na via', description: 'Buraco grande na pista, já causou dano em dois carros.', category: 'paving', status: 'pending', supporters: 6 },
+  { title: 'Poste apagado há uma semana', description: 'A rua inteira ficou escura, moradores evitam sair à noite.', category: 'lighting', status: 'in_progress', supporters: 4 },
+  { title: 'Semáforo piscando em amarelo', description: 'Cruzamento movimentado, risco de acidente no horário de pico.', category: 'traffic', status: 'pending', supporters: 3 },
   { title: 'Boca de lobo entupida', description: 'Alaga a cada chuva forte e a água invade as calçadas.', category: 'sanitation', status: 'done' },
   { title: 'Terreno baldio com mato alto', description: 'Acúmulo de lixo e risco de animais peçonhentos.', category: 'cleaning', status: 'done' },
-  { title: 'Calçada quebrada em frente à escola', description: 'Crianças precisam desviar pela rua para passar.', category: 'paving', status: 'in_progress' },
-  { title: 'Lâmpada queimada na praça', description: 'Dois postes da praça central estão sem iluminação.', category: 'lighting', status: 'pending' },
-  { title: 'Placa de pare derrubada', description: 'A placa caiu após o temporal e ninguém recolheu.', category: 'traffic', status: 'pending' },
-  { title: 'Vazamento de água na esquina', description: 'Água corrente há três dias, desperdício grande.', category: 'sanitation', status: 'in_progress' },
-  { title: 'Descarte irregular de entulho', description: 'Entulho de obra deixado na esquina bloqueando a calçada.', category: 'cleaning', status: 'pending' },
-  { title: 'Tampa de bueiro faltando', description: 'Bueiro aberto no meio da via, sinalizado só com um galho.', category: 'sanitation', status: 'pending' },
+  { title: 'Calçada quebrada em frente à escola', description: 'Crianças precisam desviar pela rua para passar.', category: 'paving', status: 'in_progress', supporters: 5 },
+  { title: 'Lâmpada queimada na praça', description: 'Dois postes da praça central estão sem iluminação.', category: 'lighting', status: 'pending', supporters: 2 },
+  { title: 'Placa de pare derrubada', description: 'A placa caiu após o temporal e ninguém recolheu.', category: 'traffic', status: 'pending', supporters: 1 },
+  { title: 'Vazamento de água na esquina', description: 'Água corrente há três dias, desperdício grande.', category: 'sanitation', status: 'in_progress', supporters: 2 },
+  { title: 'Descarte irregular de entulho', description: 'Entulho de obra deixado na esquina bloqueando a calçada.', category: 'cleaning', status: 'pending', supporters: 3 },
+  { title: 'Tampa de bueiro faltando', description: 'Bueiro aberto no meio da via, sinalizado só com um galho.', category: 'sanitation', status: 'pending', supporters: 2 },
   { title: 'Poda de árvore sobre a fiação', description: 'Galhos encostando nos fios de energia.', category: 'other', status: 'done' },
+];
+
+/**
+ * Vizinhos que só aparecem como apoio ("eu também vi isso") nos chamados do
+ * João e da Ana. Sem eles o maior número possível seria 1 — o outro cidadão —,
+ * e a demonstração não mostraria a ideia: vários avisos do mesmo problema
+ * virando um chamado só.
+ */
+const NEIGHBORS = [
+  'Carlos Menezes',
+  'Fernanda Rocha',
+  'Paulo Henrique Souza',
+  'Juliana Castro',
+  'Marcos Vinícius Lima',
+  'Patrícia Gomes',
 ];
 
 /**
@@ -84,7 +101,7 @@ async function main() {
   // ticket_events. TRUNCATE não dispara triggers de linha.
   // `agencies` entra na lista por causa das FKs vindas de tickets e eventos.
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE ticket_events, tickets, ticket_counters, agencies, users RESTART IDENTITY CASCADE'
+    'TRUNCATE TABLE ticket_supports, ticket_events, tickets, ticket_counters, agencies, users RESTART IDENTITY CASCADE'
   );
 
   console.log('Criando órgãos externos...');
@@ -100,6 +117,14 @@ async function main() {
     prisma.user.create({ data: { name: 'João Ferreira', email: 'joao@email.com', passwordHash: password, role: 'citizen' } }),
     prisma.user.create({ data: { name: 'Ana Beatriz Lima', email: 'ana@email.com', passwordHash: password, role: 'citizen' } }),
   ]);
+
+  const neighbors = await Promise.all(
+    NEIGHBORS.map((name, i) =>
+      prisma.user.create({
+        data: { name, email: `vizinho${i + 1}@email.com`, passwordHash: password, role: 'citizen' },
+      })
+    )
+  );
 
   const year = new Date().getFullYear();
   let seq = 0;
@@ -149,6 +174,12 @@ async function main() {
       });
     }
 
+    if (sample.supporters) {
+      await prisma.ticketSupport.createMany({
+        data: neighbors.slice(0, sample.supporters).map((n) => ({ ticketId: ticket.id, userId: n.id })),
+      });
+    }
+
     if (sample.status === 'done') {
       await prisma.ticketEvent.create({
         data: {
@@ -164,7 +195,9 @@ async function main() {
 
   await prisma.ticketCounter.create({ data: { year, lastSeq: BigInt(seq) } });
 
-  console.log(`Seed concluído: 1 admin, ${citizens.length} cidadãos, ${SAMPLES.length} chamados.`);
+  console.log(
+    `Seed concluído: 1 admin, ${citizens.length} cidadãos, ${neighbors.length} vizinhos que apoiam, ${SAMPLES.length} chamados.`
+  );
   console.log('Login: gestor@prefeitura.gov.br | joao@email.com | ana@email.com — senha: senha123');
 }
 

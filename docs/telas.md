@@ -50,6 +50,13 @@ Voltar para o [README](../README.md).
   nome nem e-mail do solicitante. Só abre enquanto o chamado está na lista. O
   formulário de abertura avisa, antes do botão de envio, que o chamado fica
   visível a outros cidadãos.
+- **"Eu também vi isso" mora no detalhe de "Na cidade".** É a saída para quem
+  ia abrir um chamado que já existe: em vez de um duplicado, o chamado ganha um
+  apoio, e o gestor vê a contagem no card do quadro e no detalhe. O botão é um
+  só, com `aria-pressed` e rótulo fixo — trocar "apoiar" por "desfazer"
+  derrubaria o foco no meio da ação. Não aparece no próprio chamado nem no
+  concluído (`acceptsSupport` em `packages/shared`, a mesma regra da API); a
+  contagem aparece para todos, inclusive para o autor.
 - **A ordenação por proximidade só roda quando o usuário pede.** A página nunca
   aciona o GPS sozinha — pedir permissão sem o usuário ter solicitado nada é o
   caminho mais rápido para um "bloquear" permanente naquele aparelho.
