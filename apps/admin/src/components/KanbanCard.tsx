@@ -113,8 +113,13 @@ export function KanbanCard({
           />
         )}
         <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-          <p className="font-mono text-[10px] text-content-tertiary">
-            {dateTime(ticket.createdAt)}
+          {/* O protocolo é o que o cidadão informa ao cobrar, e a busca do
+              quadro aceita: o card precisa mostrar o que fez ele aparecer. */}
+          {/* Dois `span` com `gap`, sem separador no texto: na coluna estreita a
+              data quebra para a linha de baixo sem deixar um "·" pendurado. */}
+          <p className="flex flex-wrap gap-x-2 font-mono text-[10px] text-content-tertiary">
+            <span className="text-content-secondary">{ticket.protocol}</span>
+            <span>{dateTime(ticket.createdAt)}</span>
           </p>
           {/* Cidadãos que confirmaram em vez de abrir um duplicado: é o sinal
               de prioridade que o quadro não teria de outro jeito. */}

@@ -10,7 +10,7 @@ Voltar para o [README](../README.md).
 | `/` | Gateway público (requisito 2.3) |
 | `/entrar` | Login e cadastro do cidadão (a mesma tela alterna entre os dois) |
 | `/chamados` | Meus chamados |
-| `/chamados/na-cidade` | Chamados de toda a cidade, em projeção reduzida |
+| `/chamados/na-cidade` | Chamados das outras pessoas, em projeção reduzida, com busca e filtros |
 | `/chamados/novo` | Abertura de serviço |
 | `/chamados/:id` | Protocolo e linha do tempo |
 
@@ -64,9 +64,25 @@ Voltar para o [README](../README.md).
   derrubaria o foco no meio da ação. Não aparece no próprio chamado nem no
   concluído (`acceptsSupport` em `packages/shared`, a mesma regra da API); a
   contagem aparece para todos, inclusive para o autor.
-- **A ordenação por proximidade só roda quando o usuário pede.** A página nunca
-  aciona o GPS sozinha — pedir permissão sem o usuário ter solicitado nada é o
-  caminho mais rápido para um "bloquear" permanente naquele aparelho.
+- **"Na cidade" não mostra os chamados de quem vê.** Na lista da cidade eles
+  confundiam, e já estão em "Meus chamados" — o texto do topo diz onde. Só a
+  lista os esconde: o detalhe `/chamados/na-cidade/:id` continua abrindo para o
+  autor, porque é o link que ele compartilha.
+- **Busca, filtros e ordem de "Na cidade" rodam no servidor.** Busca por
+  protocolo (inteiro ou um pedaço) ou título; filtros de status e categoria;
+  ordem por mais recentes, mais antigos, mais apoiados ou mais próximos. A lista
+  tem teto de 50, e filtrar o que já chegou esconderia em silêncio o que ficou
+  além dele — por isso tudo vai na consulta, sempre dentro de `publicScope`, e a
+  tela diz "mostrando 50 de N" quando bate no teto. Os filtros são `<select>`
+  nativos com cara de pílula (o seletor do sistema no celular, 16px para o iOS
+  não dar zoom) e moram na URL; o cartão leva esse endereço ao detalhe, e o
+  "voltar" devolve a lista como estava.
+- **"Mais próximos" só pede o GPS quando o usuário escolhe.** A página nunca o
+  aciona sozinha — pedir permissão sem o usuário ter solicitado nada é o
+  caminho mais rápido para um "bloquear" permanente naquele aparelho. A posição
+  fica em memória enquanto o app está aberto, para voltar do detalhe sem pedir
+  de novo; se a localização falha, a ordem volta para "mais recentes" e a
+  mensagem diz o que fazer.
 
 ## Painel da prefeitura (`apps/admin`)
 
@@ -103,7 +119,16 @@ Voltar para o [README](../README.md).
 - **Arrasto só começa após 6px de movimento.** Sem essa margem, o clique no card
   vira drag e o modal de detalhes nunca abre.
 - **Busca roda no cliente** sobre os dados carregados, para o usuário digitar o
-  rótulo em português ("Iluminação") em vez do valor do enum.
+  rótulo em português ("Iluminação") em vez do valor do enum. Casa protocolo,
+  título e categoria, e o card mostra o protocolo — é o número que o cidadão
+  informa quando liga para cobrar.
+- **Protocolo completo vai também ao servidor.** O quadro só tem as 100 ordens
+  mais recentes dos três status operacionais; um encaminhado ou um chamado
+  antigo não está nele, e "nenhuma ordem" diria que o chamado não existe. Com o
+  protocolo inteiro (`2026-0000017`), a busca pergunta à API e mostra o achado
+  em "Fora do quadro", com o motivo, abrindo o mesmo modal de detalhes. Pedaço
+  de número ("17") fica só no cliente — casaria com dezenas de chamados — e,
+  quando não acha nada, o quadro avisa que é preciso o protocolo completo.
 - **O "heatmap" são círculos translúcidos sobrepostos**, exatamente como o
   requisito 3.2.4 descreve. Não somam intensidade como um heatmap real — para
   densidade de verdade seria preciso um plugin específico. O raio é em METROS

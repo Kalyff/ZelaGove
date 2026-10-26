@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createTicketSchema } from '@zeladoria/shared';
+import { createTicketSchema, listPublicTicketsQuerySchema } from '@zeladoria/shared';
 import { asyncHandler } from '../../http/asyncHandler';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import {
@@ -42,8 +42,9 @@ citizenTicketRoutes.post(
 );
 
 /**
- * "Na cidade": chamados de TODOS os cidadãos — a lista, em projeção reduzida,
- * e o detalhe de cada um.
+ * "Na cidade": chamados dos outros cidadãos — a lista, em projeção reduzida e
+ * sem os de quem pede, e o detalhe de cada um (inclusive do próprio, que é o
+ * link que o autor compartilha).
  *
  * ATENÇÃO — estas duas rotas devolvem dado de outra pessoa DE PROPÓSITO. São as
  * únicas do app do cidadão que fazem isso, e não contradizem o isolamento por
@@ -60,9 +61,10 @@ citizenTicketRoutes.post(
  */
 citizenTicketRoutes.get(
   '/public',
-  asyncHandler(async (_req, res) => {
-    const tickets = await listPublicTickets();
-    res.json({ data: tickets.map(toPublicTicketDTO), total: tickets.length });
+  asyncHandler(async (req, res) => {
+    const filters = listPublicTicketsQuerySchema.parse(req.query);
+    const [tickets, total] = await listPublicTickets(req.user!.id, filters);
+    res.json({ data: tickets.map(toPublicTicketDTO), total });
   })
 );
 

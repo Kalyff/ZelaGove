@@ -23,6 +23,8 @@ export const queryKeys = {
   /** Quadro de ordens: só os três status operacionais. */
   boardTickets: ['admin-tickets'] as const,
   forwardedTickets: ['forwarded-tickets'] as const,
+  /** Protocolo completo procurado fora das linhas que o quadro carregou. */
+  protocolLookup: (protocol: string | null) => ['protocol-lookup', protocol] as const,
   ticketDetail: (id: string | null) => ['admin-ticket', id] as const,
   metrics: ['metrics'] as const,
   mapPoints: ['map-points'] as const,
@@ -32,15 +34,16 @@ export const queryKeys = {
 /**
  * Invalida TODAS as telas que enxergam um chamado.
  *
- * Qualquer escrita mexe no quadro, na lista de encaminhados, no detalhe aberto,
- * nos indicadores e no mapa — os cinco leem o mesmo dado por recortes
- * diferentes. Invalidar em bloco é mais barato que lembrar, a cada mutação
- * nova, de qual recorte também mudou.
+ * Qualquer escrita mexe no quadro, na lista de encaminhados, na busca por
+ * protocolo, no detalhe aberto, nos indicadores e no mapa — os seis leem o
+ * mesmo dado por recortes diferentes. Invalidar em bloco é mais barato que
+ * lembrar, a cada mutação nova, de qual recorte também mudou.
  */
 export function invalidateTicketViews(queryClient: QueryClient) {
   for (const key of [
     queryKeys.boardTickets,
     queryKeys.forwardedTickets,
+    ['protocol-lookup'],
     ['admin-ticket'],
     queryKeys.metrics,
     queryKeys.mapPoints,

@@ -22,9 +22,20 @@ Voltar para o [README](../README.md).
   social é a genérica do app, sem título nem foto do chamado. Abrir para quem não
   tem conta, ou por mais tempo, pede uma página pública própria com um código
   secreto por chamado — decisão de privacidade, não só de código.
-- **Busca do servidor filtra só por título.** O Kanban filtra no cliente por
-  título e categoria (requisito 4.8), usando os rótulos em português. O filtro do
-  servidor existe para quando entrar paginação.
+- **A busca do painel no servidor filtra só por título e protocolo.** O Kanban
+  filtra no cliente por protocolo, título e categoria (requisito 4.8), usando os
+  rótulos em português, e só pergunta ao servidor quando recebe um protocolo
+  completo. Por isso um pedaço de protocolo ou um título acha apenas o que está
+  nas 100 ordens do quadro; encaminhados e chamados antigos exigem o protocolo
+  inteiro. O filtro de categoria do painel no servidor fica para quando entrar
+  paginação.
+- **"Na cidade" tem teto de 50 e não pagina.** Busca, filtros e ordem rodam no
+  servidor antes do teto, e a tela avisa "mostrando 50 de N" — mas não há
+  "carregar mais". "Mais próximos" é a exceção: ordena no aparelho só os até 50
+  que vieram, porque ordenar no servidor exigiria mandar a posição de quem vê. A
+  busca segue `publicScope`: encaminhados e concluídos há mais de 30 dias não
+  aparecem nem pelo protocolo exato, e os chamados de quem vê ficam em "Meus
+  chamados".
 - **Sem fila offline.** Chamado aberto sem sinal se perde. Guardar rascunho em
   IndexedDB e sincronizar depois resolveria, mas traz conflito de timestamp e
   foto pesada em storage local — decisão pendente.

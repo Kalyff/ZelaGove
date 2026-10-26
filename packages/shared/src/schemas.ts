@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { TICKET_CATEGORIES, TICKET_STATUSES } from './enums';
+import {
+  PUBLIC_FEED_SORTS,
+  PUBLIC_FEED_STATUSES,
+  TICKET_CATEGORIES,
+  TICKET_STATUSES,
+} from './enums';
 
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email('E-mail inválido.'),
@@ -108,6 +113,22 @@ export const listTicketsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(1).max(100).default(50),
 });
+
+/**
+ * Busca, filtros e ordem da lista "Na cidade".
+ *
+ * Aplicados no servidor, e não sobre o que o app já recebeu: a lista tem teto
+ * de 50, e filtrar depois do corte esconderia em silêncio tudo o que ficou
+ * além dele. O status só aceita o que a lista mostra — pedir `forwarded` é 422,
+ * não uma lista vazia que pareça resposta.
+ */
+export const listPublicTicketsQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  status: z.enum(PUBLIC_FEED_STATUSES).optional(),
+  category: z.enum(TICKET_CATEGORIES).optional(),
+  sort: z.enum(PUBLIC_FEED_SORTS).default('recent'),
+});
+export type ListPublicTicketsQuery = z.infer<typeof listPublicTicketsQuerySchema>;
 
 /**
  * Cadastro de cidadão pela própria interface (a única forma de uma conta nascer

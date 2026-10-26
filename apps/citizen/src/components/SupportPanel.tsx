@@ -14,7 +14,8 @@ import { supportTicket, withdrawSupport } from '../lib/api';
  * com vinte apoios — prioridade em vez de fila.
  *
  * O botão só aparece para quem pode apoiar: não no próprio chamado (a lista
- * "Na cidade" inclui os seus) e não no concluído. A contagem aparece para
+ * "Na cidade" esconde os seus, mas o autor ainda abre o detalhe pelo link que
+ * compartilhou) e não no concluído. A contagem aparece para
  * todos, inclusive para o autor — é o retorno de que outras pessoas também
  * foram afetadas.
  */

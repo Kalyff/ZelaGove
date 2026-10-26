@@ -28,10 +28,11 @@ export const client = createApiClient(
  * PENDENTES para fora da resposta. Perda de dado com cara de layout.
  */
 export function listTickets(
-  params: { status?: TicketStatus[]; page?: number; perPage?: number } = {},
+  params: { status?: TicketStatus[]; q?: string; page?: number; perPage?: number } = {},
 ): Promise<TicketPageDTO> {
   const qs = new URLSearchParams({ perPage: String(params.perPage ?? 100) });
   if (params.status?.length) qs.set('status', params.status.join(','));
+  if (params.q) qs.set('q', params.q);
   if (params.page) qs.set('page', String(params.page));
   return client.request(`/admin/tickets?${qs}`);
 }

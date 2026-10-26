@@ -10,7 +10,7 @@ import {
   StatusBadge,
 } from '@zeladoria/ui';
 import { coords } from '@zeladoria/shared';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ForwardedNotice } from '../components/ForwardedNotice';
 import { SupportPanel } from '../components/SupportPanel';
 import { Timeline } from '../components/Timeline';
@@ -40,9 +40,18 @@ const SOURCES = {
 } as const;
 
 export default function TicketDetail({ source }: { source: keyof typeof SOURCES }) {
-  const { queryKey, load, backTo, backLabel, notFound } = SOURCES[source];
+  const { queryKey, load, backLabel, notFound } = SOURCES[source];
   const { id = '' } = useParams();
   const navigate = useNavigate();
+  /* A lista "Na cidade" manda o próprio endereço, com busca e filtros, para o
+     "voltar" devolvê-la como estava. Vem do estado do histórico, que só o app
+     escreve; ainda assim só vale se apontar para a lista. Quem chegou por link
+     compartilhado não tem estado e volta à lista sem filtros. */
+  const sentBackTo = (useLocation().state as { backTo?: string } | null)?.backTo;
+  const backTo =
+    source === 'city' && sentBackTo?.startsWith('/chamados/na-cidade')
+      ? sentBackTo
+      : SOURCES[source].backTo;
   const {
     data: ticket,
     isLoading,

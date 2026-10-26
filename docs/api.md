@@ -38,7 +38,7 @@ pessoa sem saber por que o cadastro falhou.
 |---|---|---|
 | GET | `/tickets` | só os do próprio usuário (requisito 4.6) |
 | POST | `/tickets` | multipart, foto opcional de até 5 MB |
-| GET | `/tickets/public` | chamados de TODOS, em projeção reduzida |
+| GET | `/tickets/public` | chamados dos OUTROS, em projeção reduzida; `?q=&status=&category=&sort=recent\|oldest\|supports` |
 | GET | `/tickets/public/:id` | detalhe de um chamado da lista pública, sem o solicitante |
 | POST | `/tickets/public/:id/support` | "eu também vi isso"; idempotente |
 | DELETE | `/tickets/public/:id/support` | desfaz o apoio; idempotente |
@@ -52,6 +52,12 @@ nenhuma das duas carrega nome, e-mail ou `userId` de quem abriu. As duas seguem 
 mesma regra de visibilidade (`publicScope`): pendente, em andamento ou concluído
 há até 30 dias, nunca encaminhado; fora dela o detalhe responde 404. Exigem estar
 autenticado como cidadão.
+
+A lista deixa de fora os chamados de quem pede (estão em `GET /tickets`); o
+detalhe não, porque é o link que o autor compartilha. Busca, filtros e ordem
+entram num `AND` com `publicScope` — estreitam, nunca alargam — e antes do teto
+de 50: `q` casa título ou protocolo, `status` aceita só o que a lista mostra
+(`forwarded` é 422) e `total` é a contagem do filtro, não o tamanho da página.
 
 O **apoio** ("eu também vi isso") é a alternativa a abrir um chamado duplicado:
 vinte avisos do mesmo problema viram um chamado com `supportCount: 20`, número
@@ -67,7 +73,7 @@ de quem abriu —, que é o que a tela usa para oferecer ou não o botão.
 
 | Método | Rota | Observação |
 |---|---|---|
-| GET | `/admin/tickets` | `?status=a,b&q=&page=&perPage=` |
+| GET | `/admin/tickets` | `?status=a,b&q=&page=&perPage=`; `q` casa título ou protocolo |
 | GET | `/admin/tickets/map` | payload enxuto do mapa (requisito 3.2.4) |
 | GET | `/admin/tickets/:id` | inclui solicitante e linha do tempo |
 | PATCH | `/admin/tickets/:id/status` | multipart; recusa `forwarded` |

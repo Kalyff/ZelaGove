@@ -17,7 +17,14 @@ import {
   type TicketPageDTO,
   type TicketStatus,
 } from '@zeladoria/shared';
-import { ErrorState, IconSearch, Skeleton, useAnnouncer, useToast } from '@zeladoria/ui';
+import {
+  ErrorState,
+  IconSearch,
+  Skeleton,
+  StatusBadge,
+  useAnnouncer,
+  useToast,
+} from '@zeladoria/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { CompletionModal } from '../components/CompletionModal';
@@ -41,6 +48,15 @@ import { useMutationError } from '../lib/useMutationError';
 function withStatus(ticket: TicketDTO, status: TicketStatus): TicketDTO {
   return { ...ticket, status, statusLabel: STATUS_LABELS_ADMIN[status] };
 }
+
+/**
+ * Protocolo completo, no formato que o servidor gera (`nextProtocol`, na API).
+ * Só ele vai ao servidor: um pedaço de número ("17") casaria com dezenas de
+ * chamados, e esses o quadro já filtra entre os que carregou.
+ */
+const FULL_PROTOCOL = /^\d{4}-\d{7}$/;
+/** Só dígitos e traço: alguém digitando um protocolo, ainda pela metade. */
+const PROTOCOL_LIKE = /^\d[\d-]*$/;
 
 export default function WorkOrders() {
   const queryClient = useQueryClient();
@@ -164,31 +180,70 @@ export default function WorkOrders() {
     onSettled: () => invalidateTicketViews(queryClient),
   });
 
+  const term = search.trim();
+
   /**
-   * Requisito 4.8: busca em título E categoria, em tempo real. Roda no cliente
-   * sobre os dados já carregados — assim o usuário digita o rótulo em português
-   * ("Iluminação") e não o valor do enum ('lighting').
+   * Requisito 4.8: busca em título E categoria, em tempo real — e também pelo
+   * protocolo, que é o que o cidadão tem em mãos quando liga para cobrar. Roda
+   * no cliente sobre os dados já carregados — assim o usuário digita o rótulo
+   * em português ("Iluminação") e não o valor do enum ('lighting').
    */
   const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return tickets;
+    const needle = term.toLowerCase();
+    if (!needle) return tickets;
     return tickets.filter(
-      (t) => t.title.toLowerCase().includes(term) || t.categoryLabel.toLowerCase().includes(term),
+      (t) =>
+        t.protocol.includes(needle) ||
+        t.title.toLowerCase().includes(needle) ||
+        t.categoryLabel.toLowerCase().includes(needle),
     );
-  }, [tickets, search]);
+  }, [tickets, term]);
 
-  /* A contagem da busca era silenciosa para quem usa leitor de tela. */
+  /**
+   * O quadro tem só as 100 ordens mais recentes dos três status operacionais.
+   * O chamado procurado pode estar fora delas — encaminhado a outro órgão, ou
+   * antigo —, e "nenhuma ordem" ali diria que ele não existe. Com o protocolo
+   * completo, a busca pergunta também ao servidor.
+   */
+  const fullProtocol = FULL_PROTOCOL.test(term) ? term : null;
+  const lookup = useQuery({
+    queryKey: queryKeys.protocolLookup(fullProtocol),
+    queryFn: () => listTickets({ q: term, perPage: 5 }),
+    enabled: fullProtocol !== null,
+  });
+  /* `isPending` vale também para a busca desligada: sem o protocolo, não há
+     nada sendo procurado. */
+  const lookingUp = fullProtocol !== null && lookup.isPending;
+  const offBoard =
+    fullProtocol && data
+      ? lookup.data?.data.find(
+          (t) => t.protocol === fullProtocol && !tickets.some((b) => b.id === t.id),
+        )
+      : undefined;
+  const found = filtered.length + (offBoard ? 1 : 0);
+
+  /* Quadro vazio pela busca: diz por quê, e como achar o que está fora dele. */
+  let searchHint: string | null = null;
+  if (fullProtocol && lookup.isError) {
+    searchHint = 'Não foi possível procurar o protocolo fora do quadro. Verifique a conexão.';
+  } else if (data && found === 0 && fullProtocol) {
+    searchHint = lookingUp
+      ? 'Procurando o protocolo fora do quadro…'
+      : `Nenhum chamado com o protocolo ${fullProtocol}.`;
+  } else if (data && found === 0 && PROTOCOL_LIKE.test(term)) {
+    searchHint = `Encaminhados e ordens antigas não ficam no quadro. Digite o protocolo completo, como ${new Date().getFullYear()}-0000017, para encontrá-los.`;
+  }
+
+  /* A contagem da busca era silenciosa para quem usa leitor de tela. Espera a
+     resposta do servidor para não anunciar "0" e logo depois "1". */
   useEffect(() => {
-    if (!search.trim()) return;
+    if (!term || lookingUp) return;
     const id = window.setTimeout(
-      () =>
-        announce(
-          `${filtered.length} ${filtered.length === 1 ? 'ordem encontrada' : 'ordens encontradas'}.`,
-        ),
+      () => announce(`${found} ${found === 1 ? 'ordem encontrada' : 'ordens encontradas'}.`),
       400,
     );
     return () => window.clearTimeout(id);
-  }, [search, filtered.length, announce]);
+  }, [term, lookingUp, found, announce]);
 
   function requestStatusChange(ticket: TicketDTO, status: TicketStatus) {
     if (status === ticket.status) return;
@@ -233,16 +288,45 @@ export default function WorkOrders() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="relative mb-5 max-w-md">
-        <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-content-tertiary" />
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por título ou categoria"
-          aria-label="Buscar ordens de serviço"
-          className="field-input pl-10"
-        />
+      <div className="mb-5 max-w-md">
+        <div className="relative">
+          <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-content-tertiary" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por protocolo, título ou categoria"
+            aria-label="Buscar ordens de serviço"
+            className="field-input pl-10"
+          />
+        </div>
+
+        {offBoard ? (
+          <div className="mt-3">
+            <p className="field-label">Fora do quadro</p>
+            <button
+              type="button"
+              onClick={() => setOpenTicketId(offBoard.id)}
+              className="card block w-full p-3.5 text-left transition-colors hover:border-line-strong"
+            >
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-xs text-content-secondary">{offBoard.protocol}</span>
+                <StatusBadge status={offBoard.status} label={offBoard.statusLabel} />
+              </span>
+              <span className="mt-1.5 block font-display text-sm font-bold text-content">
+                {offBoard.title}
+              </span>
+              {/* O motivo de ele não estar numa coluna: sem isto, parece defeito. */}
+              <span className="mt-1 block text-xs text-content-tertiary">
+                {offBoard.forwardedTo
+                  ? `Encaminhado a ${offBoard.forwardedTo.name}.`
+                  : 'Mais antigo que as 100 ordens que o quadro carrega.'}
+              </span>
+            </button>
+          </div>
+        ) : (
+          searchHint && <p className="mt-2 text-xs text-content-secondary">{searchHint}</p>
+        )}
       </div>
 
       {/* O banner é para o erro do ARRASTO. Quando um modal está aberto, a

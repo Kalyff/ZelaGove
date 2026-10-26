@@ -274,6 +274,26 @@ describe('encaminhamento a órgão externo', () => {
     expect(p1.body.data[0].forwardedTo?.name).toBe('Concessionária de Energia');
   });
 
+  /* O encaminhado não está no quadro, e é justamente o chamado que o cidadão
+     liga para cobrar: o painel acha pelo protocolo perguntando ao servidor. */
+  it('`q` acha pelo protocolo, inclusive o encaminhado, sem perder o título', async () => {
+    await openTicket(citizenToken, { title: 'Outro chamado' });
+    const alvo = await openTicket(citizenToken, { title: 'Poste caído' });
+    await forward(alvo.id, { agencyId: energia.id, note: 'Rede elétrica é da concessionária.' })
+      .expect(200);
+
+    const porProtocolo = await request(app)
+      .get(`/api/v1/admin/tickets?q=${alvo.protocol}`)
+      .set(auth)
+      .expect(200);
+    expect(porProtocolo.body.total).toBe(1);
+    expect(porProtocolo.body.data[0].id).toBe(alvo.id);
+    expect(porProtocolo.body.data[0].status).toBe('forwarded');
+
+    const porTitulo = await request(app).get('/api/v1/admin/tickets?q=poste').set(auth).expect(200);
+    expect(porTitulo.body.data.map((t: { id: string }) => t.id)).toEqual([alvo.id]);
+  });
+
   /* Os contadores fixos da rota descartavam qualquer status que não fossem os
      três originais: `forwarded` entrava no groupBy e sumia, e a soma deixava de
      bater com o total sem ninguém perceber. */

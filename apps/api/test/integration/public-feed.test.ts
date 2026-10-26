@@ -51,12 +51,14 @@ describe('lista pública de chamados', () => {
    */
   it('mostra a um cidadão os chamados dos OUTROS — é para isso que existe', async () => {
     await openTicket(joaoToken, { title: 'Chamado do João' });
-    await openTicket(anaToken, { title: 'Chamado da Ana' });
+    const daAna = await openTicket(anaToken, { title: 'Chamado da Ana' });
 
     const res = await publicFeed(joaoToken).expect(200);
 
-    expect(res.body.total).toBe(2);
-    expect(res.body.data).toHaveLength(2);
+    /* E SÓ os dos outros: os próprios confundiam na lista da cidade e já estão
+       em "Meus chamados". */
+    expect(res.body.total).toBe(1);
+    expect(res.body.data.map((t: { id: string }) => t.id)).toEqual([daAna.id]);
   });
 
   it('e `GET /tickets` CONTINUA escopado ao próprio usuário', async () => {
@@ -177,6 +179,91 @@ describe('lista pública de chamados', () => {
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
+  /* ---- busca, filtros e ordem ----------------------------------------- */
+
+  describe('busca, filtros e ordem', () => {
+    const feed = (query: string) =>
+      request(app)
+        .get(`/api/v1/tickets/public?${query}`)
+        .set('Authorization', `Bearer ${joaoToken}`);
+    const ids = (res: { body: { data: { id: string }[] } }) => res.body.data.map((t) => t.id);
+
+    it('acha pelo protocolo — inteiro ou sem o ano — e pelo título', async () => {
+      const poste = await openTicket(anaToken, { title: 'Poste apagado na praça' });
+      const buraco = await openTicket(anaToken, { title: 'Buraco na rua' });
+
+      expect(ids(await feed(`q=${poste.protocol}`).expect(200))).toEqual([poste.id]);
+      const semAno = buraco.protocol.split('-')[1];
+      expect(ids(await feed(`q=${semAno}`).expect(200))).toEqual([buraco.id]);
+      expect(ids(await feed('q=POSTE').expect(200))).toEqual([poste.id]);
+    });
+
+    /* A busca estreita o escopo, nunca o alarga: o protocolo exato de um
+       encaminhado continua sem aparecer. */
+    it('não acha encaminhado nem pelo protocolo exato', async () => {
+      const orgao = await createAgency();
+      const externo = await openTicket(anaToken);
+      await request(app)
+        .post(`/api/v1/admin/tickets/${externo.id}/forward`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ agencyId: orgao.id, note: 'Competência da concessionária.' })
+        .expect(200);
+
+      const res = await feed(`q=${externo.protocol}`).expect(200);
+      expect(res.body.total).toBe(0);
+    });
+
+    it('filtra por status sem trazer o concluído de fora da janela', async () => {
+      await openTicket(anaToken, { title: 'Ainda pendente' });
+      const recente = await openTicket(anaToken, { title: 'Resolvido ontem' });
+      const antigo = await openTicket(anaToken, { title: 'Resolvido no ano passado' });
+      for (const t of [recente, antigo]) {
+        await request(app)
+          .patch(`/api/v1/admin/tickets/${t.id}/status`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .field('status', 'done')
+          .field('note', 'Serviço executado.')
+          .expect(200);
+      }
+      await prisma.$executeRawUnsafe(
+        `UPDATE tickets SET updated_at = now() - interval '31 days' WHERE id = '${antigo.id}'`
+      );
+
+      const res = await feed('status=done').expect(200);
+      expect(ids(res)).toEqual([recente.id]);
+      expect(res.body.total).toBe(1);
+    });
+
+    it('recusa filtrar por status que a lista não mostra', async () => {
+      await feed('status=forwarded').expect(422);
+    });
+
+    /* O total é o do filtro, e não o tamanho da página: é ele que deixa a tela
+       dizer "mostrando 50 de 132" quando a lista bate no teto. */
+    it('filtra por categoria, com o total do filtro', async () => {
+      const luz1 = await openTicket(anaToken, { category: 'lighting' });
+      const luz2 = await openTicket(anaToken, { category: 'lighting' });
+      await openTicket(anaToken, { category: 'paving' });
+
+      const res = await feed('category=lighting').expect(200);
+      expect(res.body.total).toBe(2);
+      expect(ids(res).sort()).toEqual([luz1.id, luz2.id].sort());
+    });
+
+    it('ordena pelos mais antigos e pelos mais apoiados', async () => {
+      const primeiro = await openTicket(anaToken, { title: 'Aberto antes' });
+      const segundo = await openTicket(anaToken, { title: 'Aberto depois' });
+      await request(app)
+        .post(`/api/v1/tickets/public/${primeiro.id}/support`)
+        .set('Authorization', `Bearer ${joaoToken}`)
+        .expect(200);
+
+      expect(ids(await feed('').expect(200))).toEqual([segundo.id, primeiro.id]);
+      expect(ids(await feed('sort=oldest').expect(200))).toEqual([primeiro.id, segundo.id]);
+      expect(ids(await feed('sort=supports').expect(200))).toEqual([primeiro.id, segundo.id]);
+    });
+  });
+
   /* ---- detalhe: GET /tickets/public/:id ------------------------------- */
 
   describe('detalhe de um chamado da cidade', () => {
@@ -261,6 +348,15 @@ describe('lista pública de chamados', () => {
       );
 
       await publicDetail(joaoToken, antigo.id).expect(404);
+    });
+
+    /* A lista esconde os próprios, o detalhe não: é o link que o autor
+       compartilha, e ele precisa conseguir abri-lo. */
+    it('abre para o autor o próprio chamado, que a lista não mostra', async () => {
+      const doJoao = await openTicket(joaoToken);
+
+      const res = await publicDetail(joaoToken, doJoao.id).expect(200);
+      expect(res.body.isMine).toBe(true);
     });
 
     it('responde 404 para id inexistente', async () => {

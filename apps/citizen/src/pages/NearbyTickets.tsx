@@ -1,9 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
+  PUBLIC_FEED_STATUSES,
+  TICKET_CATEGORIES,
   distanceBetween,
   formatDistance,
   shortDate,
   supportLabel,
+  type Point,
   type PublicTicketDTO,
 } from '@zeladoria/shared';
 import {
@@ -13,21 +16,41 @@ import {
   IconEye,
   IconMap,
   IconPin,
+  IconSearch,
   Skeleton,
   SkeletonText,
   StatusBadge,
   ThemeToggle,
+  cn,
   useAnnouncer,
 } from '@zeladoria/ui';
 import { m } from 'framer-motion';
-import { useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { FEED_ORDERS, FeedFilters, type FeedOrder } from '../components/FeedFilters';
 import { SignOutButton } from '../components/SignOutButton';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { listPublicTickets } from '../lib/api';
 
 /**
- * "Na cidade": o que outras pessoas já registraram.
+ * Última posição obtida, em memória enquanto o app está aberto.
+ *
+ * Abrir um chamado e voltar remonta esta página, e o `useGeolocation` nasce
+ * vazio. Sem isto, "Mais próximos" exigiria pedir o GPS de novo — e a página
+ * só pede quando a pessoa toca em algo. Fica só em memória: posição não vai
+ * para armazenamento nenhum.
+ */
+let lastPosition: Point | null = null;
+
+/** Só dígitos e traço: alguém procurando um protocolo. */
+const PROTOCOL_LIKE = /^\d[\d-]*$/;
+
+function pick<T extends string>(value: string | null, options: readonly T[]): T | null {
+  return options.includes(value as T) ? (value as T) : null;
+}
+
+/**
+ * "Na cidade": o que OUTRAS pessoas já registraram.
  *
  * Serve a duas coisas concretas — não abrir chamado duplicado, e ver que a
  * prefeitura executa. Por isso a lista traz também os concluídos recentes: uma
@@ -36,42 +59,134 @@ import { listPublicTickets } from '../lib/api';
  * O cartão é enxuto (título, categoria, status e local) e leva ao detalhe completo em
  * `/chamados/na-cidade/:id` — texto, foto e andamento, sem quem abriu. É lá que
  * fica o "eu também vi isso", a alternativa a abrir um chamado duplicado.
+ *
+ * Busca, filtros e ordem moram na URL (`?busca=&status=&categoria=&ordem=`):
+ * o cartão leva esse endereço ao detalhe, e o "voltar" de lá devolve a lista
+ * como a pessoa a deixou.
  */
 export default function NearbyTickets() {
   const { announce } = useAnnouncer();
-  const { position, loading: locating, error: locationError, capture } = useGeolocation();
+  const location = useLocation();
+  const [params, setParams] = useSearchParams();
+  const geo = useGeolocation();
 
-  const { data, isLoading, isError, isFetchedAfterMount, refetch } = useQuery({
-    queryKey: ['public-tickets'],
-    queryFn: listPublicTickets,
+  const status = pick(params.get('status'), PUBLIC_FEED_STATUSES);
+  const category = pick(params.get('categoria'), TICKET_CATEGORIES);
+  const order: FeedOrder = pick(params.get('ordem'), FEED_ORDERS) ?? 'recent';
+
+  /* O campo tem estado próprio e escreve na URL a cada tecla; a consulta usa a
+     versão com atraso, para não ir ao servidor a cada letra. */
+  const [search, setSearch] = useState(() => params.get('busca') ?? '');
+  const [query, setQuery] = useState(search.trim());
+  useEffect(() => {
+    const id = window.setTimeout(() => setQuery(search.trim()), 300);
+    return () => window.clearTimeout(id);
+  }, [search]);
+
+  function setParam(key: string, value: string | null) {
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value) next.set(key, value);
+        else next.delete(key);
+        return next;
+      },
+      { replace: true },
+    );
+  }
+
+  const filtering = Boolean(query || status || category);
+  function clearFilters() {
+    setSearch('');
+    setQuery('');
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        for (const key of ['busca', 'status', 'categoria']) next.delete(key);
+        return next;
+      },
+      { replace: true },
+    );
+  }
+
+  useEffect(() => {
+    if (geo.position) lastPosition = geo.position;
+  }, [geo.position]);
+  const position = geo.position ?? lastPosition;
+
+  function changeOrder(value: FeedOrder) {
+    setParam('ordem', value === 'recent' ? null : value);
+    /* O GPS só é pedido aqui, porque a pessoa escolheu — a página NUNCA o pede
+       sozinha ao carregar. Pedir permissão sem o usuário ter solicitado nada é
+       o caminho mais rápido para um "bloquear" permanente, e aí o recurso
+       morre para sempre naquele aparelho. */
+    if (value === 'nearest' && !position) geo.capture();
+  }
+
+  /* Sem localização, "Mais próximos" não tem o que ordenar: volta para o
+     padrão, e a mensagem do erro diz o que fazer. */
+  useEffect(() => {
+    if (!geo.error) return;
+    setParams(
+      (prev) => {
+        if (prev.get('ordem') !== 'nearest') return prev;
+        const next = new URLSearchParams(prev);
+        next.delete('ordem');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [geo.error, setParams]);
+
+  const filters = {
+    q: query || undefined,
+    status: status ?? undefined,
+    category: category ?? undefined,
+    /* "Mais próximos" pede ao servidor a ordem padrão e reordena aqui. */
+    sort: order === 'nearest' ? ('recent' as const) : order,
+  };
+  const { data, isLoading, isError, isPlaceholderData, isFetchedAfterMount, refetch } = useQuery({
+    queryKey: ['public-tickets', filters],
+    queryFn: () => listPublicTickets(filters),
+    /* Trocar de filtro mantém a lista anterior na tela até a nova chegar, em
+       vez de piscar um esqueleto a cada letra digitada. */
+    placeholderData: keepPreviousData,
   });
 
+  const total = data?.total ?? 0;
   const tickets = useMemo(() => {
     const list = data?.data ?? [];
-    if (!position) return list;
-    /* Ordena por distância só quando o usuário pediu — e sobre uma cópia, para
-       não reordenar o cache do react-query no lugar. */
+    if (order !== 'nearest' || !position) return list;
+    /* Sobre uma cópia, para não reordenar o cache do react-query no lugar. */
     return [...list].sort(
       (a, b) => distanceBetween(position, a) - distanceBetween(position, b),
     );
-  }, [data, position]);
+  }, [data, order, position]);
 
+  /* Só depois que a resposta dos filtros atuais chegou: anunciar a contagem da
+     lista anterior, ainda na tela, seria anunciar o resultado errado. */
+  const filtersKey = JSON.stringify(filters);
   useEffect(() => {
-    if (isLoading || isError) return;
+    if (isLoading || isError || isPlaceholderData) return;
     announce(
-      tickets.length === 0
-        ? 'Nenhum chamado registrado na cidade.'
-        : `${tickets.length} ${tickets.length === 1 ? 'chamado' : 'chamados'} na cidade.`,
+      filtering
+        ? `${total} ${total === 1 ? 'chamado encontrado' : 'chamados encontrados'}.`
+        : total === 0
+          ? 'Nenhum chamado registrado na cidade.'
+          : `${total} ${total === 1 ? 'chamado' : 'chamados'} na cidade.`,
     );
-  }, [isLoading, isError, tickets.length, announce]);
+  }, [isLoading, isError, isPlaceholderData, filtersKey, filtering, total, announce]);
 
+  const sortedByDistance = order === 'nearest' && position !== null;
   useEffect(() => {
-    if (position) announce('Lista reordenada por proximidade.');
-  }, [position, announce]);
+    if (sortedByDistance) announce('Lista ordenada por proximidade.');
+  }, [sortedByDistance, announce]);
+
+  const backTo = location.pathname + location.search;
 
   return (
     <>
-      <header className="px-6 pb-4 pt-6">
+      <header className="px-6 pb-3 pt-6">
         <div className="flex items-start justify-between gap-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-accent">gov.br</p>
           <div className="flex items-center gap-1">
@@ -80,14 +195,54 @@ export default function NearbyTickets() {
           </div>
         </div>
         <h1 className="mt-1 font-display text-2xl font-extrabold text-content">Na cidade</h1>
-        {/* "na cidade", e não "de outras pessoas": a lista inclui os seus
-            também, de propósito. Escondê-los abriria a porta para você mesmo
-            duplicar um chamado que já abriu — que é justamente o que esta tela
-            existe para evitar. */}
+        {/* Os chamados de quem vê ficam de fora — na lista da cidade eles
+            confundiam. Dizer onde eles estão evita a impressão de que sumiram. */}
         <p className="mt-1 text-sm leading-relaxed text-content-secondary">
-          Tudo o que já foi registrado na cidade. Veja se o seu problema não foi avisado antes de
-          abrir um chamado novo.
+          O que outras pessoas já registraram. Veja se o seu problema já foi avisado antes de abrir
+          um chamado — os seus estão em{' '}
+          <Link to="/chamados" className="font-semibold text-accent underline-offset-2 hover:underline">
+            Meus chamados
+          </Link>
+          .
         </p>
+
+        <FeedFilters
+          search={search}
+          onSearchChange={(value) => {
+            setSearch(value);
+            setParam('busca', value.trim() || null);
+          }}
+          status={status}
+          onStatusChange={(value) => setParam('status', value)}
+          category={category}
+          onCategoryChange={(value) => setParam('categoria', value)}
+          order={order}
+          onOrderChange={changeOrder}
+        />
+
+        {order === 'nearest' && !position && (
+          <div className="mt-2.5">
+            {geo.loading ? (
+              <p className="text-xs text-content-secondary" role="status">
+                Procurando sua localização… {geo.elapsed}s
+              </p>
+            ) : (
+              /* "Mais próximos" veio no endereço (recarregou a página) e a
+                 posição não está em memória: pede só com o toque. */
+              <Button
+                variant="secondary"
+                fullWidth
+                iconLeft={<IconPin className="h-4 w-4" />}
+                onClick={geo.capture}
+              >
+                Usar minha localização
+              </Button>
+            )}
+          </div>
+        )}
+        {geo.error && (
+          <p className="mt-2 text-xs leading-relaxed text-danger-onSoft">{geo.error}</p>
+        )}
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-[calc(7rem+var(--safe-b))]">
@@ -116,37 +271,53 @@ export default function NearbyTickets() {
 
         {!isLoading && !isError && (
           <>
-            {/*
-              O botão dispara o GPS; a página NUNCA o pede sozinha ao carregar.
-              Pedir permissão de localização sem o usuário ter solicitado nada é
-              o caminho mais rápido para um "bloquear" permanente — e aí o
-              recurso morre para sempre naquele aparelho.
-            */}
-            {!position && tickets.length > 0 && (
-              <div className="mb-4">
-                <Button
-                  variant="secondary"
-                  fullWidth
-                  loading={locating}
-                  iconLeft={<IconPin className="h-4 w-4" />}
-                  onClick={capture}
-                >
-                  Ordenar por proximidade
-                </Button>
-                {locationError && (
-                  <p className="mt-2 text-xs leading-relaxed text-danger-onSoft">{locationError}</p>
+            {tickets.length > 0 && (
+              <div className="mb-3 flex items-center justify-between gap-3 text-xs text-content-secondary">
+                <p>
+                  {total > tickets.length
+                    ? `Mostrando ${tickets.length} de ${total}`
+                    : `${total} ${total === 1 ? 'chamado' : 'chamados'}`}
+                </p>
+                {filtering && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="font-semibold text-accent underline-offset-2 hover:underline"
+                  >
+                    Limpar filtros
+                  </button>
                 )}
               </div>
             )}
 
             {tickets.length === 0 ? (
-              <EmptyState
-                Icon={IconMap}
-                title="Nenhum chamado por aqui ainda."
-                description="Quando alguém registrar um problema na cidade, ele aparece nesta lista."
-              />
+              filtering ? (
+                <EmptyState
+                  Icon={IconSearch}
+                  title="Nenhum chamado com esses filtros."
+                  description={
+                    PROTOCOL_LIKE.test(query)
+                      ? 'Seus chamados ficam em Meus chamados. Encaminhados a outro órgão e concluídos há mais de 30 dias não aparecem aqui.'
+                      : undefined
+                  }
+                  action={
+                    <Button variant="secondary" onClick={clearFilters}>
+                      Limpar filtros
+                    </Button>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  Icon={IconMap}
+                  title="Nenhum chamado por aqui ainda."
+                  description="Quando outras pessoas registrarem problemas na cidade, eles aparecem nesta lista."
+                />
+              )
             ) : (
-              <ul className="space-y-3">
+              <ul
+                className={cn('space-y-3 transition-opacity', isPlaceholderData && 'opacity-60')}
+                aria-busy={isPlaceholderData}
+              >
                 {tickets.map((ticket, i) => (
                   <m.li
                     key={ticket.id}
@@ -163,11 +334,21 @@ export default function NearbyTickets() {
                   >
                     <PublicTicketCard
                       ticket={ticket}
+                      backTo={backTo}
                       distance={position ? distanceBetween(position, ticket) : null}
                     />
                   </m.li>
                 ))}
               </ul>
+            )}
+
+            {/* O teto dito com todas as letras: sem isto, a lista parece ter
+                acabado quando só parou de vir. */}
+            {total > tickets.length && tickets.length > 0 && (
+              <p className="mt-4 text-center text-xs leading-relaxed text-content-tertiary">
+                Mostrando os {tickets.length} primeiros de {total}. Use a busca ou os filtros para
+                achar o que procura.
+              </p>
             )}
           </>
         )}
@@ -178,14 +359,18 @@ export default function NearbyTickets() {
 
 function PublicTicketCard({
   ticket,
+  backTo,
   distance,
 }: {
   ticket: PublicTicketDTO;
+  /** Endereço da lista com os filtros, para o "voltar" do detalhe. */
+  backTo: string;
   distance: number | null;
 }) {
   return (
     <Link
       to={`/chamados/na-cidade/${ticket.id}`}
+      state={{ backTo }}
       className="block rounded-card border border-line bg-surface p-4 transition-colors hover:border-line-strong hover:bg-surface-sunken active:scale-[0.98]"
     >
       <div className="flex items-center justify-between gap-3">

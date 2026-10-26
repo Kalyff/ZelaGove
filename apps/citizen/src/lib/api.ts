@@ -1,6 +1,7 @@
 import { createApiClient } from '@zeladoria/client';
 import type {
   CitizenTicketDetailDTO,
+  ListPublicTicketsQuery,
   PublicTicketListDTO,
   TicketDTO,
   TicketListDTO,
@@ -28,13 +29,21 @@ export function getTicket(id: string): Promise<CitizenTicketDetailDTO> {
 }
 
 /**
- * Chamados de TODOS os cidadãos, em projeção reduzida — a lista "Na cidade".
+ * Chamados dos OUTROS cidadãos, em projeção reduzida — a lista "Na cidade".
  *
  * Exige estar logado como cidadão: o corte do que ela mostra é feito na origem
- * (ver `listPublicTickets` no servidor), não aqui.
+ * (ver `listPublicTickets` no servidor), não aqui. Busca, filtros e ordem
+ * também: a lista tem teto, e filtrar o que chegou esconderia o que ficou além.
  */
-export function listPublicTickets(): Promise<PublicTicketListDTO> {
-  return client.request('/tickets/public');
+export function listPublicTickets(
+  params: Partial<ListPublicTicketsQuery> = {},
+): Promise<PublicTicketListDTO> {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value) qs.set(key, value);
+  }
+  const query = qs.toString();
+  return client.request(`/tickets/public${query ? `?${query}` : ''}`);
 }
 
 /**

@@ -31,6 +31,22 @@ export const BOARD_STATUSES = ['pending', 'in_progress', 'done'] as const;
 export type BoardStatus = (typeof BOARD_STATUSES)[number];
 
 /**
+ * Os status que a lista "Na cidade" mostra — e, portanto, os únicos que o
+ * filtro dela aceita. Espelha `publicScope` na API: `forwarded` saiu das mãos
+ * do município, e o concluído só aparece por 30 dias. Iguais aos do quadro por
+ * coincidência, não por regra — por isso uma constante própria.
+ */
+export const PUBLIC_FEED_STATUSES = ['pending', 'in_progress', 'done'] as const;
+export type PublicFeedStatus = (typeof PUBLIC_FEED_STATUSES)[number];
+
+/**
+ * Ordens que o SERVIDOR aplica à lista "Na cidade". "Mais próximos" não está
+ * aqui: ordenar por distância exige a posição de quem vê, que fica no aparelho.
+ */
+export const PUBLIC_FEED_SORTS = ['recent', 'oldest', 'supports'] as const;
+export type PublicFeedSort = (typeof PUBLIC_FEED_SORTS)[number];
+
+/**
  * Os status que aceitam "eu também vi isso": o problema ainda está na rua.
  *
  * Concluído não — um apoio novo diria que ele continua lá. Encaminhado nem

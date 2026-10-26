@@ -1,5 +1,5 @@
 import type { Prisma } from '@prisma/client';
-import type { TicketStatus } from '@zeladoria/shared';
+import type { ListPublicTicketsQuery, PublicFeedSort, TicketStatus } from '@zeladoria/shared';
 import { Errors } from '../../http/errors';
 import { prisma } from '../../infra/prisma';
 
@@ -65,6 +65,24 @@ export async function getCitizenTicket(userId: string, ticketId: string) {
   return ticket;
 }
 
+/**
+ * A busca por texto das listagens: título (sem diferenciar maiúsculas) ou
+ * protocolo. Uma só para o painel e para "Na cidade", para "achar pelo
+ * protocolo" querer dizer a mesma coisa nas duas pontas.
+ *
+ * A categoria fica de fora: compará-la aqui seria comparar o valor do enum
+ * ('lighting'), não o rótulo em português que a pessoa digita. Cada lista tem
+ * a sua forma de filtrar por categoria.
+ */
+function searchWhere(q: string): Prisma.TicketWhereInput {
+  return {
+    OR: [
+      { title: { contains: q, mode: 'insensitive' } },
+      { protocol: { contains: q } },
+    ],
+  };
+}
+
 export function listAllTickets(filters: {
   /** Um ou vários. O quadro pede os três operacionais; a visão de
    *  encaminhados pede só `forwarded`. */
@@ -75,12 +93,11 @@ export function listAllTickets(filters: {
 }) {
   const where: Prisma.TicketWhereInput = {
     ...(filters.status?.length ? { status: { in: filters.status } } : {}),
-    // Requisito 4.8: busca em título E categoria.
-    // Nota: a busca por categoria compara o valor do enum ('lighting'), não o
-    // rótulo em português. Como o Kanban filtra no cliente por padrão, o
-    // usuário digita "Iluminação" e o front resolve pelo rótulo. Este filtro
-    // de servidor existe para quando entrar paginação.
-    ...(filters.q ? { title: { contains: filters.q, mode: 'insensitive' } } : {}),
+    // Requisito 4.8: busca em título E categoria — a categoria o Kanban filtra
+    // no cliente, pelo rótulo em português. O quadro pergunta ao servidor
+    // quando recebe um protocolo completo: o chamado pode estar fora das linhas
+    // que ele carregou (encaminhado ou antigo).
+    ...(filters.q ? searchWhere(filters.q) : {}),
   };
 
   return prisma.$transaction([
@@ -128,8 +145,17 @@ export function publicScope(): Prisma.TicketWhereInput {
   };
 }
 
+const PUBLIC_FEED_ORDER: Record<PublicFeedSort, Prisma.TicketOrderByWithRelationInput[]> = {
+  recent: [{ createdAt: 'desc' }],
+  /* Os que esperam há mais tempo — o que a cidade mais deve. */
+  oldest: [{ createdAt: 'asc' }],
+  /* Empate de apoios (o caso comum: zero) desempata pelo mais novo, para a
+     ordem não variar entre uma busca e outra. */
+  supports: [{ supports: { _count: 'desc' } }, { createdAt: 'desc' }],
+};
+
 /**
- * Chamados de TODOS os cidadãos, para a lista "Na cidade".
+ * Chamados dos OUTROS cidadãos, para a lista "Na cidade".
  *
  * Com `getPublicTicket`, é o único caminho do sistema que devolve chamado
  * alheio a um cidadão, e é intencional: serve para não abrir chamado duplicado
@@ -137,26 +163,49 @@ export function publicScope(): Prisma.TicketWhereInput {
  * que segue escopado por `userId` — o isolamento continua valendo em todo o
  * resto.
  *
+ * Os chamados de quem vê ficam de fora: na lista da cidade eles confundiam, e
+ * já estão em "Meus chamados". O DETALHE continua abrindo para o autor
+ * (`getPublicTicket` não filtra) — é o link que ele mesmo compartilha.
+ *
+ * Busca, filtros e ordem entram num `AND` com `publicScope`: nenhum deles pode
+ * afrouxar o escopo, só estreitar. E entram ANTES do teto, para filtrar o que
+ * existe e não só o que coube nos 50.
+ *
  * O `select` mantém a lista leve — descrição e foto ficam para o detalhe — e
  * deixa `userId` no banco.
  */
-export function listPublicTickets() {
-  return prisma.ticket.findMany({
-    where: publicScope(),
-    select: {
-      id: true,
-      protocol: true,
-      title: true,
-      category: true,
-      status: true,
-      latitude: true,
-      longitude: true,
-      createdAt: true,
-      _count: { select: { supports: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: PUBLIC_FEED_LIMIT,
-  });
+export function listPublicTickets(viewerId: string, filters: ListPublicTicketsQuery) {
+  const where: Prisma.TicketWhereInput = {
+    AND: [
+      publicScope(),
+      { userId: { not: viewerId } },
+      ...(filters.status ? [{ status: filters.status }] : []),
+      ...(filters.category ? [{ category: filters.category }] : []),
+      ...(filters.q ? [searchWhere(filters.q)] : []),
+    ],
+  };
+
+  return prisma.$transaction([
+    prisma.ticket.findMany({
+      where,
+      select: {
+        id: true,
+        protocol: true,
+        title: true,
+        category: true,
+        status: true,
+        latitude: true,
+        longitude: true,
+        createdAt: true,
+        _count: { select: { supports: true } },
+      },
+      orderBy: PUBLIC_FEED_ORDER[filters.sort],
+      take: PUBLIC_FEED_LIMIT,
+    }),
+    /* O total do filtro, não do que voltou: é o que deixa a tela dizer
+       "mostrando 50 de 132" em vez de fingir que a lista acabou. */
+    prisma.ticket.count({ where }),
+  ]);
 }
 
 /**
