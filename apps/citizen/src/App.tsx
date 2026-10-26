@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from '@zeladoria/client';
 import { AnnouncerProvider, ThemeProvider, ToastProvider } from '@zeladoria/ui';
 import { LazyMotion, MotionConfig } from 'framer-motion';
 import type { ReactElement } from 'react';
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { PhoneLayout } from './layouts/PhoneLayout';
 import { client } from './lib/api';
 import Gateway from './pages/Gateway';
@@ -29,6 +29,7 @@ const queryClient = new QueryClient({
  */
 function Protected({ children }: { children?: ReactElement }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-surface text-sm text-content-tertiary">
@@ -36,7 +37,10 @@ function Protected({ children }: { children?: ReactElement }) {
       </div>
     );
   }
-  if (!user) return <Navigate to="/entrar" replace />;
+  /* `from` leva de volta ao endereço pedido depois do login: é assim que o link
+     direto de um chamado, compartilhado por WhatsApp ou SMS, abre o chamado em
+     vez de largar quem o recebeu na lista dos próprios chamados. */
+  if (!user) return <Navigate to="/entrar" replace state={{ from: location }} />;
   return children ?? <Outlet />;
 }
 

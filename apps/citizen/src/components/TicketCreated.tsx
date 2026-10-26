@@ -2,14 +2,16 @@ import {
   Button,
   IconCheck,
   IconCopy,
+  IconShare,
   useAnnouncer,
   useReducedMotionSafe,
   useToast,
 } from '@zeladoria/ui';
 import { m } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { TicketDTO } from '@zeladoria/shared';
+import { ShareTicketDialog } from './ShareTicket';
 
 /**
  * Confirmação de abertura.
@@ -24,6 +26,7 @@ export function TicketCreated({ ticket }: { ticket: TicketDTO }) {
   const { announce } = useAnnouncer();
   const reduced = useReducedMotionSafe();
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     announce(`Chamado aberto. Protocolo ${ticket.protocol}.`, 'assertive');
@@ -42,8 +45,11 @@ export function TicketCreated({ ticket }: { ticket: TicketDTO }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col justify-center px-7 py-10 text-center">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-soft">
+    /* `mt-auto`/`mb-auto` nas pontas em vez de `justify-center`: centra igual
+       quando cabe e, em tela baixa, rola em vez de cortar o topo — com
+       `justify-center` o excesso transborda para os dois lados. */
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-7 py-10 text-center">
+      <div className="mx-auto mt-auto flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-success-soft">
         {reduced ? (
           <IconCheck className="h-8 w-8 text-success-onSoft" />
         ) : (
@@ -105,13 +111,24 @@ export function TicketCreated({ ticket }: { ticket: TicketDTO }) {
         {ticket.categoryLabel}
       </p>
 
-      <div className="mt-7 space-y-3">
+      <div className="mb-auto mt-7 space-y-3">
         <Button
           size="lg"
           fullWidth
           onClick={() => navigate(`/chamados/${ticket.id}`, { replace: true })}
         >
           Acompanhar chamado
+        </Button>
+        {/* Na confirmação: é agora, com o problema na frente, que o cidadão
+            avisa a vizinhança ou a família. */}
+        <Button
+          variant="secondary"
+          size="lg"
+          fullWidth
+          onClick={() => setSharing(true)}
+          iconLeft={<IconShare className="h-5 w-5" />}
+        >
+          Compartilhar protocolo
         </Button>
         <Button
           variant="ghost"
@@ -122,6 +139,8 @@ export function TicketCreated({ ticket }: { ticket: TicketDTO }) {
           Voltar aos meus chamados
         </Button>
       </div>
+
+      <ShareTicketDialog ticket={ticket} open={sharing} onClose={() => setSharing(false)} />
     </div>
   );
 }

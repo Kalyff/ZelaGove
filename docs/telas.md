@@ -25,6 +25,13 @@ Voltar para o [README](../README.md).
 - **Abrir chamado termina numa confirmação com o número de protocolo**
   (`components/TicketCreated.tsx`), com botão de copiar. O protocolo é o que o
   cidadão usa para cobrar depois.
+- **A confirmação compartilha o protocolo por fora do app**
+  (`components/ShareTicket.tsx`): link direto, WhatsApp, SMS, e-mail, Facebook e
+  X, mais a folha de compartilhamento do sistema onde o navegador a oferece. O
+  link aponta para o detalhe da aba "Na cidade" (`/chamados/na-cidade/:id`), o
+  único que outro cidadão consegue abrir. Quem não está logado passa pelo login,
+  que devolve ao endereço pedido (o `from` que `Protected` põe no estado da
+  navegação) e avisa que há um chamado compartilhado esperando.
 - **Entrar e criar conta moram na MESMA tela**, num alternador. Cadastro é a
   primeira coisa que um cidadão faz e a única vez que faz — mandá-lo para outra
   rota, e de volta, é atrito num momento em que ele ainda não tem motivo nenhum

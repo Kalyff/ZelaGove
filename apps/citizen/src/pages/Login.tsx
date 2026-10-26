@@ -11,7 +11,7 @@ import {
   cn,
 } from '@zeladoria/ui';
 import { useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, type Location } from 'react-router-dom';
 
 type Modo = 'entrar' | 'cadastrar';
 
@@ -31,6 +31,11 @@ const TEXTOS = {
 export default function Login() {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  /* Endereço que mandou para cá (ver `Protected` em App.tsx). Vem do estado do
+     histórico, que só o próprio app escreve — não da URL, então não serve de
+     redirecionamento aberto. */
+  const from = (useLocation().state as { from?: Location } | null)?.from;
+  const veioDeLinkCompartilhado = from?.pathname.startsWith('/chamados/na-cidade/') ?? false;
   const [modo, setModo] = useState<Modo>('entrar');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -71,7 +76,7 @@ export default function Login() {
     try {
       if (cadastrando) await signUp(name, email, password);
       else await signIn(email, password);
-      navigate('/chamados', { replace: true });
+      navigate(from ?? '/chamados', { replace: true });
     } catch (err) {
       /* O servidor manda `field` em todo erro de validação — com ele a mensagem
          aparece NO campo em vez de num aviso genérico no topo que não diz qual
@@ -96,7 +101,13 @@ export default function Login() {
       <h1 className="mt-2 font-display text-3xl font-extrabold text-content">
         Zeladoria<span className="text-success-onSoft">.gov</span>
       </h1>
-      <p className="mt-2 text-sm text-content-secondary">{textos.descricao}</p>
+      {/* Quem chega por um link recebido no WhatsApp não sabe por que caiu num
+          login — a frase genérica sobre "seus chamados" não fala com ele. */}
+      <p className="mt-2 text-sm text-content-secondary">
+        {veioDeLinkCompartilhado
+          ? 'Entre ou crie uma conta para ver o chamado que compartilharam com você.'
+          : textos.descricao}
+      </p>
 
       {/* Alternador entre os dois modos.
           Botões com `aria-pressed`, e não abas com `role="tablist"`: aba

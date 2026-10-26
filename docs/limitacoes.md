@@ -15,6 +15,13 @@ Voltar para o [README](../README.md).
   sessões com `jti`. Aceito no protótipo, não em produção.
 - **URL de foto é presigned de vida curta.** Uma vez emitida, vale para quem a
   tiver, independente de papel.
+- **O link compartilhado do chamado exige conta e segue a regra da aba "Na
+  cidade".** Ele abre `/chamados/na-cidade/:id`, que pede login de cidadão e
+  responde "não encontrado" quando o chamado é encaminhado a outro órgão ou 30
+  dias depois de concluído (`publicScope`). Pelo mesmo motivo, a prévia em rede
+  social é a genérica do app, sem título nem foto do chamado. Abrir para quem não
+  tem conta, ou por mais tempo, pede uma página pública própria com um código
+  secreto por chamado — decisão de privacidade, não só de código.
 - **Busca do servidor filtra só por título.** O Kanban filtra no cliente por
   título e categoria (requisito 4.8), usando os rótulos em português. O filtro do
   servidor existe para quando entrar paginação.

@@ -215,3 +215,65 @@ export const IconMonitor = createIcon(
     <path d="M8 21h8m-4-4v4" />
   </>,
 );
+
+/* ---- compartilhamento ------------------------------------------------ */
+
+export const IconShare = createIcon(
+  'IconShare',
+  <>
+    <path d="M12 3.5v11" />
+    <path d="m7.5 8 4.5-4.5L16.5 8" />
+    <path d="M5 12.5v6A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-6" />
+  </>,
+);
+export const IconLink = createIcon(
+  'IconLink',
+  <>
+    <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1" />
+    <path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" />
+  </>,
+);
+export const IconMail = createIcon(
+  'IconMail',
+  <>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="m3.5 6.5 8.5 6.5 8.5-6.5" />
+  </>,
+);
+export const IconSms = createIcon(
+  'IconSms',
+  <>
+    <path d="M4 5h16a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20 17H9.5L5 20.5V17H4a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 4 5Z" />
+    <circle cx="8" cy="11" r="1.1" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="11" r="1.1" fill="currentColor" stroke="none" />
+    <circle cx="16" cy="11" r="1.1" fill="currentColor" stroke="none" />
+  </>,
+);
+
+/* Marcas redesenhadas no traço do conjunto, e não os logotipos oficiais
+   (preenchidos): ao lado dos outros ícones, um logo sólido pesaria o dobro.
+   A forma basta para reconhecer; o rótulo ao lado diz o nome. */
+
+export const IconWhatsApp = createIcon(
+  'IconWhatsApp',
+  <>
+    <path d="M3.5 20.5 4.8 16A8.5 8.5 0 1 1 8 19.3l-4.5 1.2Z" />
+    <path d="M9.2 8.5h1.6l.9 2.2-1.1.9a5 5 0 0 0 2.8 2.8l.9-1.1 2.2.9v1.6a1 1 0 0 1-1 1 7.3 7.3 0 0 1-7.3-7.3 1 1 0 0 1 1-1Z" />
+  </>,
+);
+export const IconFacebook = createIcon(
+  'IconFacebook',
+  <>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M13.2 21V11a2.5 2.5 0 0 1 2.5-2.5h1.3" />
+    <path d="M10 13.5h6" />
+  </>,
+);
+/** Logotipo do X (antigo Twitter). Não confundir com `IconClose`. */
+export const IconXLogo = createIcon(
+  'IconXLogo',
+  <>
+    <path d="M4 4h4.5L20 20h-4.5L4 4Z" />
+    <path d="m19.5 4-6.6 7.3M11.1 12.7 4.5 20" />
+  </>,
+);
