@@ -65,7 +65,8 @@ Voltar para o [README](../README.md).
   concluído (`acceptsSupport` em `packages/shared`, a mesma regra da API); a
   contagem aparece para todos, inclusive para o autor.
 - **"Na cidade" não mostra os chamados de quem vê.** Na lista da cidade eles
-  confundiam, e já estão em "Meus chamados" — o texto do topo diz onde. Só a
+  confundiam, e já estão em "Meus chamados". Quem busca o próprio protocolo ali
+  recebe esse aviso no resultado vazio. Só a
   lista os esconde: o detalhe `/chamados/na-cidade/:id` continua abrindo para o
   autor, porque é o link que ele compartilha.
 - **Busca, filtros e ordem de "Na cidade" rodam no servidor.** Busca por

@@ -7,8 +7,8 @@ import {
   type PublicFeedStatus,
   type TicketCategory,
 } from '@zeladoria/shared';
-import { IconChevronDown, IconSearch, Input, cn } from '@zeladoria/ui';
-import type { ReactNode } from 'react';
+import { Field, IconChevronDown, IconSearch, Input, Select, cn } from '@zeladoria/ui';
+import { useId, useState, type ReactNode } from 'react';
 
 /**
  * As ordens da lista "Na cidade": as do servidor e "Mais próximos", que roda
@@ -24,12 +24,22 @@ const ORDER_LABELS: Record<FeedOrder, string> = {
   nearest: 'Mais próximos',
 };
 
+const PILL = 'h-11 rounded-full border text-base font-medium transition-colors';
+const PILL_IDLE = 'border-line-strong bg-surface text-content';
+/* Fora do padrão: destacado, para o filtro aplicado se ver de relance. */
+const PILL_ACTIVE = 'border-accent bg-accent-soft text-accent-onSoft';
+
 /**
- * Busca e filtros da lista "Na cidade".
+ * Busca, filtros e ordem da lista "Na cidade".
  *
- * Os filtros são `<select>` nativos com cara de pílula: no celular abrem o
- * seletor do sistema, e teclado e leitor de tela vêm de graça. Fonte de 16px
- * mesmo na pílula — menor que isso, o iOS dá zoom ao focar e não volta.
+ * Status e categoria ficam atrás do botão "Filtros", e só a ordem fica à
+ * vista. As três pílulas lado a lado não cabiam: rolavam na horizontal, e no
+ * computador — sem barra nem gesto de arrastar — pareciam simplesmente
+ * cortadas. Dentro do painel cada `<select>` tem a largura toda e um rótulo
+ * visível, então nenhuma opção ("Em Deslocamento") é truncada.
+ *
+ * Fonte de 16px nos `<select>` — menor que isso, o iOS dá zoom ao focar e não
+ * volta.
  */
 export function FeedFilters({
   search,
@@ -50,6 +60,11 @@ export function FeedFilters({
   order: FeedOrder;
   onOrderChange: (value: FeedOrder) => void;
 }) {
+  const panelId = useId();
+  const activeFilters = (status ? 1 : 0) + (category ? 1 : 0);
+  /* Volta do detalhe com filtro aplicado: o painel já abre mostrando qual. */
+  const [open, setOpen] = useState(activeFilters > 0);
+
   return (
     <div className="mt-4">
       <div className="relative">
@@ -65,43 +80,35 @@ export function FeedFilters({
         />
       </div>
 
-      {/* Rola na horizontal em vez de quebrar linha: três pílulas em duas
-          linhas comeriam a altura que a lista precisa. `-mx-6 px-6` deixa a
-          rolagem chegar à borda da tela. */}
-      <div className="-mx-6 mt-2.5 flex gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none]">
-        <PillSelect
-          label="Filtrar por status"
-          value={status ?? ''}
-          active={status !== null}
-          onChange={(v) => onStatusChange(v ? (v as PublicFeedStatus) : null)}
+      <div className="mt-2.5 flex gap-2">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((o) => !o)}
+          className={cn(
+            PILL,
+            'flex shrink-0 items-center gap-2 px-4',
+            activeFilters > 0 ? PILL_ACTIVE : PILL_IDLE,
+          )}
         >
-          <option value="">Todos os status</option>
-          {PUBLIC_FEED_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABELS_CITIZEN[s]}
-            </option>
-          ))}
-        </PillSelect>
+          Filtros
+          {activeFilters > 0 && (
+            <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-accent px-1.5 text-xs font-bold text-accent-on">
+              {activeFilters}
+              <span className="sr-only">{activeFilters === 1 ? ' ativo' : ' ativos'}</span>
+            </span>
+          )}
+        </button>
 
-        <PillSelect
-          label="Filtrar por categoria"
-          value={category ?? ''}
-          active={category !== null}
-          onChange={(v) => onCategoryChange(v ? (v as TicketCategory) : null)}
-        >
-          <option value="">Todas as categorias</option>
-          {TICKET_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {CATEGORY_LABELS[c]}
-            </option>
-          ))}
-        </PillSelect>
-
+        {/* Ocupa o resto da linha: com o botão ao lado, "Mais recentes" cabe
+            inteiro até em tela de 360px. */}
         <PillSelect
           label="Ordenar"
           value={order}
           active={order !== 'recent'}
           onChange={(v) => onOrderChange(v as FeedOrder)}
+          className="min-w-0 flex-1"
         >
           {FEED_ORDERS.map((o) => (
             <option key={o} value={o}>
@@ -110,6 +117,48 @@ export function FeedFilters({
           ))}
         </PillSelect>
       </div>
+
+      {open && (
+        <div id={panelId} className="mt-3 space-y-3">
+          <Field label="Status">
+            {(p) => (
+              <Select
+                {...p}
+                value={status ?? ''}
+                onChange={(e) =>
+                  onStatusChange(e.target.value ? (e.target.value as PublicFeedStatus) : null)
+                }
+              >
+                <option value="">Todos</option>
+                {PUBLIC_FEED_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_LABELS_CITIZEN[s]}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+
+          <Field label="Categoria">
+            {(p) => (
+              <Select
+                {...p}
+                value={category ?? ''}
+                onChange={(e) =>
+                  onCategoryChange(e.target.value ? (e.target.value as TicketCategory) : null)
+                }
+              >
+                <option value="">Todas</option>
+                {TICKET_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {CATEGORY_LABELS[c]}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+        </div>
+      )}
     </div>
   );
 }
@@ -119,26 +168,26 @@ function PillSelect({
   value,
   active,
   onChange,
+  className,
   children,
 }: {
   label: string;
   value: string;
-  /** Fora do padrão: destacada, para o filtro aplicado se ver de relance. */
   active: boolean;
   onChange: (value: string) => void;
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <label className="relative shrink-0">
+    <label className={cn('relative', className)}>
       <span className="sr-only">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          'h-11 cursor-pointer appearance-none rounded-full border pl-4 pr-9 text-base font-medium transition-colors',
-          active
-            ? 'border-accent bg-accent-soft text-accent-onSoft'
-            : 'border-line-strong bg-surface text-content',
+          PILL,
+          'w-full cursor-pointer appearance-none pl-4 pr-9',
+          active ? PILL_ACTIVE : PILL_IDLE,
         )}
       >
         {children}

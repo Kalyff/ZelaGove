@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   PUBLIC_FEED_STATUSES,
   TICKET_CATEGORIES,
@@ -8,7 +8,7 @@ import {
   supportLabel,
   type Point,
   type PublicTicketDTO,
-} from '@zeladoria/shared';
+} from "@zeladoria/shared";
 import {
   Button,
   EmptyState,
@@ -23,14 +23,18 @@ import {
   ThemeToggle,
   cn,
   useAnnouncer,
-} from '@zeladoria/ui';
-import { m } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { FEED_ORDERS, FeedFilters, type FeedOrder } from '../components/FeedFilters';
-import { SignOutButton } from '../components/SignOutButton';
-import { useGeolocation } from '../hooks/useGeolocation';
-import { listPublicTickets } from '../lib/api';
+} from "@zeladoria/ui";
+import { m } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
+import {
+  FEED_ORDERS,
+  FeedFilters,
+  type FeedOrder,
+} from "../components/FeedFilters";
+import { SignOutButton } from "../components/SignOutButton";
+import { useGeolocation } from "../hooks/useGeolocation";
+import { listPublicTickets } from "../lib/api";
 
 /**
  * Última posição obtida, em memória enquanto o app está aberto.
@@ -45,7 +49,10 @@ let lastPosition: Point | null = null;
 /** Só dígitos e traço: alguém procurando um protocolo. */
 const PROTOCOL_LIKE = /^\d[\d-]*$/;
 
-function pick<T extends string>(value: string | null, options: readonly T[]): T | null {
+function pick<T extends string>(
+  value: string | null,
+  options: readonly T[],
+): T | null {
   return options.includes(value as T) ? (value as T) : null;
 }
 
@@ -70,13 +77,13 @@ export default function NearbyTickets() {
   const [params, setParams] = useSearchParams();
   const geo = useGeolocation();
 
-  const status = pick(params.get('status'), PUBLIC_FEED_STATUSES);
-  const category = pick(params.get('categoria'), TICKET_CATEGORIES);
-  const order: FeedOrder = pick(params.get('ordem'), FEED_ORDERS) ?? 'recent';
+  const status = pick(params.get("status"), PUBLIC_FEED_STATUSES);
+  const category = pick(params.get("categoria"), TICKET_CATEGORIES);
+  const order: FeedOrder = pick(params.get("ordem"), FEED_ORDERS) ?? "recent";
 
   /* O campo tem estado próprio e escreve na URL a cada tecla; a consulta usa a
      versão com atraso, para não ir ao servidor a cada letra. */
-  const [search, setSearch] = useState(() => params.get('busca') ?? '');
+  const [search, setSearch] = useState(() => params.get("busca") ?? "");
   const [query, setQuery] = useState(search.trim());
   useEffect(() => {
     const id = window.setTimeout(() => setQuery(search.trim()), 300);
@@ -97,12 +104,12 @@ export default function NearbyTickets() {
 
   const filtering = Boolean(query || status || category);
   function clearFilters() {
-    setSearch('');
-    setQuery('');
+    setSearch("");
+    setQuery("");
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        for (const key of ['busca', 'status', 'categoria']) next.delete(key);
+        for (const key of ["busca", "status", "categoria"]) next.delete(key);
         return next;
       },
       { replace: true },
@@ -115,12 +122,12 @@ export default function NearbyTickets() {
   const position = geo.position ?? lastPosition;
 
   function changeOrder(value: FeedOrder) {
-    setParam('ordem', value === 'recent' ? null : value);
+    setParam("ordem", value === "recent" ? null : value);
     /* O GPS só é pedido aqui, porque a pessoa escolheu — a página NUNCA o pede
        sozinha ao carregar. Pedir permissão sem o usuário ter solicitado nada é
        o caminho mais rápido para um "bloquear" permanente, e aí o recurso
        morre para sempre naquele aparelho. */
-    if (value === 'nearest' && !position) geo.capture();
+    if (value === "nearest" && !position) geo.capture();
   }
 
   /* Sem localização, "Mais próximos" não tem o que ordenar: volta para o
@@ -129,9 +136,9 @@ export default function NearbyTickets() {
     if (!geo.error) return;
     setParams(
       (prev) => {
-        if (prev.get('ordem') !== 'nearest') return prev;
+        if (prev.get("ordem") !== "nearest") return prev;
         const next = new URLSearchParams(prev);
-        next.delete('ordem');
+        next.delete("ordem");
         return next;
       },
       { replace: true },
@@ -143,10 +150,17 @@ export default function NearbyTickets() {
     status: status ?? undefined,
     category: category ?? undefined,
     /* "Mais próximos" pede ao servidor a ordem padrão e reordena aqui. */
-    sort: order === 'nearest' ? ('recent' as const) : order,
+    sort: order === "nearest" ? ("recent" as const) : order,
   };
-  const { data, isLoading, isError, isPlaceholderData, isFetchedAfterMount, refetch } = useQuery({
-    queryKey: ['public-tickets', filters],
+  const {
+    data,
+    isLoading,
+    isError,
+    isPlaceholderData,
+    isFetchedAfterMount,
+    refetch,
+  } = useQuery({
+    queryKey: ["public-tickets", filters],
     queryFn: () => listPublicTickets(filters),
     /* Trocar de filtro mantém a lista anterior na tela até a nova chegar, em
        vez de piscar um esqueleto a cada letra digitada. */
@@ -156,7 +170,7 @@ export default function NearbyTickets() {
   const total = data?.total ?? 0;
   const tickets = useMemo(() => {
     const list = data?.data ?? [];
-    if (order !== 'nearest' || !position) return list;
+    if (order !== "nearest" || !position) return list;
     /* Sobre uma cópia, para não reordenar o cache do react-query no lugar. */
     return [...list].sort(
       (a, b) => distanceBetween(position, a) - distanceBetween(position, b),
@@ -170,16 +184,24 @@ export default function NearbyTickets() {
     if (isLoading || isError || isPlaceholderData) return;
     announce(
       filtering
-        ? `${total} ${total === 1 ? 'chamado encontrado' : 'chamados encontrados'}.`
+        ? `${total} ${total === 1 ? "chamado encontrado" : "chamados encontrados"}.`
         : total === 0
-          ? 'Nenhum chamado registrado na cidade.'
-          : `${total} ${total === 1 ? 'chamado' : 'chamados'} na cidade.`,
+          ? "Nenhum chamado registrado na cidade."
+          : `${total} ${total === 1 ? "chamado" : "chamados"} na cidade.`,
     );
-  }, [isLoading, isError, isPlaceholderData, filtersKey, filtering, total, announce]);
+  }, [
+    isLoading,
+    isError,
+    isPlaceholderData,
+    filtersKey,
+    filtering,
+    total,
+    announce,
+  ]);
 
-  const sortedByDistance = order === 'nearest' && position !== null;
+  const sortedByDistance = order === "nearest" && position !== null;
   useEffect(() => {
-    if (sortedByDistance) announce('Lista ordenada por proximidade.');
+    if (sortedByDistance) announce("Lista ordenada por proximidade.");
   }, [sortedByDistance, announce]);
 
   const backTo = location.pathname + location.search;
@@ -188,39 +210,33 @@ export default function NearbyTickets() {
     <>
       <header className="px-6 pb-3 pt-6">
         <div className="flex items-start justify-between gap-3">
-          <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-accent">gov.br</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-accent">
+            gov.br
+          </p>
           <div className="flex items-center gap-1">
             <ThemeToggle />
             <SignOutButton />
           </div>
         </div>
-        <h1 className="mt-1 font-display text-2xl font-extrabold text-content">Na cidade</h1>
-        {/* Os chamados de quem vê ficam de fora — na lista da cidade eles
-            confundiam. Dizer onde eles estão evita a impressão de que sumiram. */}
-        <p className="mt-1 text-sm leading-relaxed text-content-secondary">
-          O que outras pessoas já registraram. Veja se o seu problema já foi avisado antes de abrir
-          um chamado — os seus estão em{' '}
-          <Link to="/chamados" className="font-semibold text-accent underline-offset-2 hover:underline">
-            Meus chamados
-          </Link>
-          .
-        </p>
+        <h1 className="mt-1 font-display text-2xl font-extrabold text-content">
+          Na cidade
+        </h1>
 
         <FeedFilters
           search={search}
           onSearchChange={(value) => {
             setSearch(value);
-            setParam('busca', value.trim() || null);
+            setParam("busca", value.trim() || null);
           }}
           status={status}
-          onStatusChange={(value) => setParam('status', value)}
+          onStatusChange={(value) => setParam("status", value)}
           category={category}
-          onCategoryChange={(value) => setParam('categoria', value)}
+          onCategoryChange={(value) => setParam("categoria", value)}
           order={order}
           onOrderChange={changeOrder}
         />
 
-        {order === 'nearest' && !position && (
+        {order === "nearest" && !position && (
           <div className="mt-2.5">
             {geo.loading ? (
               <p className="text-xs text-content-secondary" role="status">
@@ -241,7 +257,9 @@ export default function NearbyTickets() {
           </div>
         )}
         {geo.error && (
-          <p className="mt-2 text-xs leading-relaxed text-danger-onSoft">{geo.error}</p>
+          <p className="mt-2 text-xs leading-relaxed text-danger-onSoft">
+            {geo.error}
+          </p>
         )}
       </header>
 
@@ -257,7 +275,10 @@ export default function NearbyTickets() {
         {isLoading && (
           <ul className="space-y-3" aria-hidden>
             {Array.from({ length: 5 }, (_, i) => (
-              <li key={i} className="rounded-card border border-line bg-surface p-4">
+              <li
+                key={i}
+                className="rounded-card border border-line bg-surface p-4"
+              >
                 <div className="flex items-center justify-between gap-3">
                   <Skeleton className="h-[26px] w-28 rounded-full" />
                   <SkeletonText className="w-12" />
@@ -276,7 +297,7 @@ export default function NearbyTickets() {
                 <p>
                   {total > tickets.length
                     ? `Mostrando ${tickets.length} de ${total}`
-                    : `${total} ${total === 1 ? 'chamado' : 'chamados'}`}
+                    : `${total} ${total === 1 ? "chamado" : "chamados"}`}
                 </p>
                 {filtering && (
                   <button
@@ -297,7 +318,7 @@ export default function NearbyTickets() {
                   title="Nenhum chamado com esses filtros."
                   description={
                     PROTOCOL_LIKE.test(query)
-                      ? 'Seus chamados ficam em Meus chamados. Encaminhados a outro órgão e concluídos há mais de 30 dias não aparecem aqui.'
+                      ? "Seus chamados ficam em Meus chamados. Encaminhados a outro órgão e concluídos há mais de 30 dias não aparecem aqui."
                       : undefined
                   }
                   action={
@@ -315,7 +336,10 @@ export default function NearbyTickets() {
               )
             ) : (
               <ul
-                className={cn('space-y-3 transition-opacity', isPlaceholderData && 'opacity-60')}
+                className={cn(
+                  "space-y-3 transition-opacity",
+                  isPlaceholderData && "opacity-60",
+                )}
                 aria-busy={isPlaceholderData}
               >
                 {tickets.map((ticket, i) => (
@@ -335,7 +359,9 @@ export default function NearbyTickets() {
                     <PublicTicketCard
                       ticket={ticket}
                       backTo={backTo}
-                      distance={position ? distanceBetween(position, ticket) : null}
+                      distance={
+                        position ? distanceBetween(position, ticket) : null
+                      }
                     />
                   </m.li>
                 ))}
@@ -346,8 +372,8 @@ export default function NearbyTickets() {
                 acabado quando só parou de vir. */}
             {total > tickets.length && tickets.length > 0 && (
               <p className="mt-4 text-center text-xs leading-relaxed text-content-tertiary">
-                Mostrando os {tickets.length} primeiros de {total}. Use a busca ou os filtros para
-                achar o que procura.
+                Mostrando os {tickets.length} primeiros de {total}. Use a busca
+                ou os filtros para achar o que procura.
               </p>
             )}
           </>
@@ -375,13 +401,20 @@ function PublicTicketCard({
     >
       <div className="flex items-center justify-between gap-3">
         <StatusBadge status={ticket.status} label={ticket.statusLabel} />
-        <time className="font-mono text-xs text-content-tertiary" dateTime={ticket.createdAt}>
+        <time
+          className="font-mono text-xs text-content-tertiary"
+          dateTime={ticket.createdAt}
+        >
           {shortDate(ticket.createdAt)}
         </time>
       </div>
 
-      <p className="mt-2.5 font-display font-bold text-content">{ticket.title}</p>
-      <p className="mt-0.5 text-sm text-content-secondary">{ticket.categoryLabel}</p>
+      <p className="mt-2.5 font-display font-bold text-content">
+        {ticket.title}
+      </p>
+      <p className="mt-0.5 text-sm text-content-secondary">
+        {ticket.categoryLabel}
+      </p>
 
       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
         {distance !== null && (
@@ -396,7 +429,9 @@ function PublicTicketCard({
             {supportLabel(ticket.supportCount)}
           </span>
         )}
-        <span className="font-mono text-[11px] text-content-tertiary">{ticket.protocol}</span>
+        <span className="font-mono text-[11px] text-content-tertiary">
+          {ticket.protocol}
+        </span>
       </div>
     </Link>
   );
